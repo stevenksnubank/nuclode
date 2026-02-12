@@ -1,0 +1,77 @@
+# blocked-domains.txt - Domains always blocked (known data exfiltration targets)
+# Lines starting with # are comments. Subdomain matching is automatic.
+# These are blocked REGARDLESS of allowlist entries.
+
+# ─── Public File Sharing / Image Hosting ─────────────────────────────────────
+catbox.moe
+litterbox.catbox.moe
+imgur.com
+imgbb.com
+postimages.org
+imgbox.com
+uploadfiles.io
+filebin.net
+filedropper.com
+mediafire.com
+sendspace.com
+zippyshare.com
+
+# ─── Paste / Text Sharing Services ──────────────────────────────────────────
+pastebin.com
+dpaste.org
+dpaste.com
+hastebin.com
+paste.ee
+paste.mozilla.org
+privatebin.net
+ghostbin.com
+rentry.co
+ix.io
+sprunge.us
+termbin.com
+bpa.st
+
+# ─── Generic File Transfer / Sharing ────────────────────────────────────────
+transfer.sh
+file.io
+0x0.st
+wetransfer.com
+mega.nz
+mega.io
+dropbox.com
+temp.sh
+bashupload.com
+oshi.at
+filemail.com
+gofile.io
+pixeldrain.com
+anonfiles.com
+bayfiles.com
+
+# ─── URL Shorteners (can obscure exfiltration targets) ──────────────────────
+bit.ly
+tinyurl.com
+is.gd
+v.gd
+t.co
+rb.gy
+cutt.ly
+shorturl.at
+tiny.cc
+ow.ly
+
+# ─── Webhook / Request Bin Services (data can be sent via GET/POST) ──────────
+webhook.site
+requestbin.com
+pipedream.com
+hookbin.com
+beeceptor.com
+requestcatcher.com
+
+# ─── DNS Exfiltration / Tunneling ────────────────────────────────────────────
+ngrok.io
+ngrok.com
+serveo.net
+localhost.run
+localtunnel.me
+bore.pub

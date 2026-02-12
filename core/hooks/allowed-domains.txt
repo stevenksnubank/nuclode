@@ -1,0 +1,58 @@
+# allowed-domains.txt - Domains approved for AI agent network access
+# Lines starting with # are comments. Subdomain matching is automatic:
+# e.g., "github.com" also allows "api.github.com", "raw.githubusercontent.com" needs its own entry.
+
+# ─── Git Hosting ─────────────────────────────────────────────────────────────
+github.com
+raw.githubusercontent.com
+objects.githubusercontent.com
+gitlab.com
+bitbucket.org
+
+# ─── Package Managers ────────────────────────────────────────────────────────
+npmjs.org
+registry.npmjs.org
+yarnpkg.com
+pypi.org
+files.pythonhosted.org
+crates.io
+static.crates.io
+rubygems.org
+pkg.go.dev
+proxy.golang.org
+sum.golang.org
+packagist.org
+repo.maven.apache.org
+central.sonatype.com
+clojars.org
+hex.pm
+repo.hex.pm
+nuget.org
+cocoapods.org
+pub.dev
+
+# ─── Documentation ───────────────────────────────────────────────────────────
+docs.python.org
+docs.oracle.com
+developer.mozilla.org
+devdocs.io
+docs.rs
+pkg.go.dev
+docs.microsoft.com
+learn.microsoft.com
+cloud.google.com
+docs.aws.amazon.com
+stackoverflow.com
+man7.org
+
+# ─── Anthropic / Claude ─────────────────────────────────────────────────────
+anthropic.com
+claude.ai
+code.claude.com
+api.anthropic.com
+docs.anthropic.com
+
+# ─── Common Development APIs ─────────────────────────────────────────────────
+api.github.com
+api.gitlab.com
+api.bitbucket.org

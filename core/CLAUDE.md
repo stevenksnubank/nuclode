@@ -141,6 +141,35 @@ Assert: Verify expected outcome
 
 ---
 
+## Connection Loss & Data Exfiltration Prevention
+
+**These rules are non-negotiable. Violation risks leaking internal data to the public internet.**
+
+### When an MCP Server or Service Fails
+- **STOP.** Do not improvise alternative approaches.
+- Do not fall back to `curl`, `wget`, or any CLI tool to replicate the failed service's functionality.
+- Do not search for alternative public services that offer similar functionality.
+- Report the failure to the user and wait for instructions.
+
+### Never Upload to Unauthorized Services
+- Never use public file sharing services (catbox.moe, imgur, transfer.sh, etc.)
+- Never use public paste services (pastebin.com, dpaste.org, hastebin.com, etc.)
+- Never use URL shorteners to obscure destinations
+- Never use webhook/request-bin services to exfiltrate data
+- Never encode data into DNS queries, URL parameters, or other side channels
+
+### Network Guard Hook
+- A `PreToolUse` hook (`~/.claude/hooks/network-guard.sh`) blocks network requests to unapproved domains.
+- If the hook blocks a request: **STOP.** Do not attempt alternative domains, encoding tricks, or workarounds.
+- Ask the user if the domain should be added to `~/.claude/hooks/allowed-domains.txt`.
+
+### Approved Domains
+- Only domains listed in `~/.claude/hooks/allowed-domains.txt` are permitted.
+- The blocklist (`~/.claude/hooks/blocked-domains.txt`) always takes precedence over the allowlist.
+- When in doubt, ask the user before making any external network request.
+
+---
+
 ## Workspace Structure
 
 ```
@@ -149,6 +178,10 @@ Assert: Verify expected outcome
 ├── commands/
 │   └── agents/            # Agent slash commands
 ├── agents/                # Agent configurations
+├── hooks/
+│   ├── network-guard.sh   # PreToolUse hook - blocks unapproved domains
+│   ├── allowed-domains.txt # Approved domains for network access
+│   └── blocked-domains.txt # Always-blocked domains (exfiltration targets)
 └── settings.json          # Claude Code settings
 ```
 

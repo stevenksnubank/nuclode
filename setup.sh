@@ -84,6 +84,25 @@ else
     fi
 fi
 
+# Check jq (required for network-guard hook)
+if command -v jq &> /dev/null; then
+    ok "jq found"
+else
+    warn "jq not found (required for network-guard hook)"
+    read -p "  Install jq? [Y/n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        if command -v brew &> /dev/null; then
+            brew install jq
+        elif command -v apt-get &> /dev/null; then
+            sudo apt-get install -y jq
+        else
+            error "Could not install jq automatically. Please install it manually."
+        fi
+        ok "jq installed"
+    fi
+fi
+
 # ─── Step 2: Layer Selection ─────────────────────────────────────────
 if [ ${#LAYERS[@]} -eq 0 ]; then
     info "Available layers:"
@@ -164,6 +183,13 @@ done
 
 # Copy beads templates
 cp "$SCRIPT_DIR"/core/beads/* "$CLAUDE_DIR/beads/"
+
+# Copy hooks (network-guard and domain lists)
+if [ -d "$SCRIPT_DIR/core/hooks" ]; then
+    cp "$SCRIPT_DIR"/core/hooks/* "$CLAUDE_DIR/hooks/"
+    chmod +x "$CLAUDE_DIR/hooks/"*.sh 2>/dev/null || true
+    ok "Network guard hooks installed"
+fi
 
 # Install settings.json and .mcp.json
 cp "$SCRIPT_DIR/core/settings.json" "$CLAUDE_DIR/settings.json"
@@ -271,6 +297,22 @@ with open(agent_file, 'w') as f:
                 fi
             fi
         done
+    fi
+
+    # Merge layer-specific domain lists (append to core lists)
+    if [ -d "$layer_dir/hooks" ]; then
+        if [ -f "$layer_dir/hooks/allowed-domains.txt" ]; then
+            echo "" >> "$CLAUDE_DIR/hooks/allowed-domains.txt"
+            echo "# ─── Layer: $layer ────────────────────────────────────────────────────" >> "$CLAUDE_DIR/hooks/allowed-domains.txt"
+            cat "$layer_dir/hooks/allowed-domains.txt" >> "$CLAUDE_DIR/hooks/allowed-domains.txt"
+            ok "  Merged $layer allowed-domains.txt"
+        fi
+        if [ -f "$layer_dir/hooks/blocked-domains.txt" ]; then
+            echo "" >> "$CLAUDE_DIR/hooks/blocked-domains.txt"
+            echo "# ─── Layer: $layer ────────────────────────────────────────────────────" >> "$CLAUDE_DIR/hooks/blocked-domains.txt"
+            cat "$layer_dir/hooks/blocked-domains.txt" >> "$CLAUDE_DIR/hooks/blocked-domains.txt"
+            ok "  Merged $layer blocked-domains.txt"
+        fi
     fi
 
     # Copy layer scripts
