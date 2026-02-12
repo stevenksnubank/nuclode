@@ -8,10 +8,10 @@ You have 5 specialized agents available via slash commands:
 
 | Agent | Command | Model | Purpose |
 |-------|---------|-------|---------|
-| **Code Planner** | `/agents:code-planner` | Opus 4.5 + Thinking | Architectural planning, implementation design |
+| **Code Planner** | `/agents:code-planner` | Opus 4.6 + Thinking | Architectural planning, implementation design |
 | **Code Implementer** | `/agents:code-implementer` | Sonnet 4.5 | Execute approved plans, write code |
-| **Code Reviewer** | `/agents:code-reviewer` | Opus 4.5 + Thinking | Code review, quality analysis |
-| **Active Defender** | `/agents:active-defender` | Opus 4.5 + Thinking | Offensive security testing |
+| **Code Reviewer** | `/agents:code-reviewer` | Opus 4.6 + Thinking | Code review, quality analysis |
+| **Active Defender** | `/agents:active-defender` | Opus 4.6 + Thinking | Offensive security testing |
 | **Test Writer** | `/agents:test-writer` | Sonnet 4.5 | Generate comprehensive tests |
 
 ### Workflow

@@ -1,6 +1,6 @@
 ---
 description: Test generation agent - creates comprehensive test suites with edge cases and security tests (Sonnet for fast generation)
-model: claude-sonnet-4-5-20250514
+model: claude-sonnet-4-5-20250929
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(pytest:*), Bash(python:*), Bash(coverage:*), Bash(hypothesis:*), Bash(mutmut:*), Bash(git:*), Bash(npm:*), Bash(jest:*), Bash(vitest:*), Bash(npx:*)
 argument-hint: [file path, function, or component to test]
 ---

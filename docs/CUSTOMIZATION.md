@@ -93,7 +93,7 @@ mkdir -p core/agents/my-agent
 {
   "name": "my-agent",
   "description": "What this agent does",
-  "model": "claude-sonnet-4-5",
+  "model": "claude-sonnet-4-5-20250929",
   "extended_thinking": false,
   "capabilities": ["my_capability"],
   "tools": ["Read", "Grep", "Glob"],
@@ -126,7 +126,7 @@ Create `core/commands/agents/my-agent.md`:
 ```markdown
 ---
 description: What this agent does
-model: claude-sonnet-4-5-20250514
+model: claude-sonnet-4-5-20250929
 allowed-tools: Read, Grep, Glob
 argument-hint: [what to provide]
 ---

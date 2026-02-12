@@ -1,6 +1,6 @@
 ---
-description: Code review agent - analyzes code for quality, security, and best practices (Opus 4.5 + Extended Thinking)
-model: claude-opus-4-5-20251101
+description: Code review agent - analyzes code for quality, security, and best practices (Opus 4.6 + Extended Thinking)
+model: claude-opus-4-6
 allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(pytest:*), Bash(ruff:*), Bash(mypy:*), Bash(coverage:*), Bash(safety:*), Bash(bandit:*), Bash(npm audit:*), WebSearch, WebFetch, Task
 argument-hint: [file path, PR, or description of code to review]
 ---

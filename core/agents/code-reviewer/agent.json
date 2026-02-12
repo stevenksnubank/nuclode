@@ -1,8 +1,8 @@
 {
   "name": "code-reviewer",
-  "description": "General-purpose code reviewer focusing on quality, security, and best practices. Uses Opus 4.5 with extended thinking for comprehensive analysis. Produces assessment reviews that require user approval before any actions are taken.",
+  "description": "General-purpose code reviewer focusing on quality, security, and best practices. Uses Opus 4.6 with extended thinking for comprehensive analysis. Produces assessment reviews that require user approval before any actions are taken.",
   "version": "1.1.0",
-  "model": "claude-opus-4-5",
+  "model": "claude-opus-4-6",
   "extended_thinking": true,
   "capabilities": [
     "code_analysis",

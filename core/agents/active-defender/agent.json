@@ -1,8 +1,8 @@
 {
   "name": "active-defender",
-  "description": "Offensive security expert with Active Defender mentality - probes for vulnerabilities, tests security assumptions, and validates implementation security across any codebase. Uses Opus 4.5 with extended thinking for deep security analysis.",
+  "description": "Offensive security expert with Active Defender mentality - probes for vulnerabilities, tests security assumptions, and validates implementation security across any codebase. Uses Opus 4.6 with extended thinking for deep security analysis.",
   "version": "1.0.0",
-  "model": "claude-opus-4-5",
+  "model": "claude-opus-4-6",
   "extended_thinking": true,
   "capabilities": [
     "vulnerability_discovery",

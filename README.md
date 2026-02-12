@@ -23,10 +23,10 @@ claude  # Your workspace is ready
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
-| **code-planner** | Opus 4.5 + Thinking | Architectural planning, implementation design |
+| **code-planner** | Opus 4.6 + Thinking | Architectural planning, implementation design |
 | **code-implementer** | Sonnet 4.5 | Execute approved plans, write code |
-| **code-reviewer** | Opus 4.5 + Thinking | Code review, quality analysis |
-| **active-defender** | Opus 4.5 + Thinking | Offensive security testing |
+| **code-reviewer** | Opus 4.6 + Thinking | Code review, quality analysis |
+| **active-defender** | Opus 4.6 + Thinking | Offensive security testing |
 | **test-writer** | Sonnet 4.5 | Generate comprehensive tests |
 
 ### Beads Integration

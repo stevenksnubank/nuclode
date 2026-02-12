@@ -1,6 +1,6 @@
 ---
-description: Offensive security agent - probes for vulnerabilities with Active Defender mindset (Opus 4.5 + Extended Thinking)
-model: claude-opus-4-5-20251101
+description: Offensive security agent - probes for vulnerabilities with Active Defender mindset (Opus 4.6 + Extended Thinking)
+model: claude-opus-4-6
 allowed-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, Task
 argument-hint: [component, feature, or code to security test]
 ---

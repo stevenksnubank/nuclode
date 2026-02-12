@@ -1,6 +1,6 @@
 ---
 description: Execution agent - implements code based on approved plans from code-planner (Sonnet for fast execution)
-model: claude-sonnet-4-5-20250514
+model: claude-sonnet-4-5-20250929
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(pytest:*), Bash(python:*), Bash(ruff:*), Bash(mypy:*), Bash(coverage:*), Bash(git:*), Bash(diff:*), Bash(npm:*), Bash(node:*), Bash(npx:*), Bash(tsc:*)
 argument-hint: [paste approved plan or describe implementation task]
 ---

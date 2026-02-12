@@ -6,34 +6,34 @@ This directory contains your global AI agents for specialized development tasks.
 
 | Agent | Command | Model | Purpose |
 |-------|---------|-------|---------|
-| **Code Planner** | `/agents:code-planner` | Opus 4.5 + Thinking | Architectural planning, implementation design |
+| **Code Planner** | `/agents:code-planner` | Opus 4.6 + Thinking | Architectural planning, implementation design |
 | **Code Implementer** | `/agents:code-implementer` | Sonnet 4.5 | Execute approved plans, write code |
-| **Code Reviewer** | `/agents:code-reviewer` | Opus 4.5 + Thinking | Code review, quality analysis |
-| **Active Defender** | `/agents:active-defender` | Opus 4.5 + Thinking | Offensive security testing |
+| **Code Reviewer** | `/agents:code-reviewer` | Opus 4.6 + Thinking | Code review, quality analysis |
+| **Active Defender** | `/agents:active-defender` | Opus 4.6 + Thinking | Offensive security testing |
 | **Test Writer** | `/agents:test-writer` | Sonnet 4.5 | Generate comprehensive tests |
 
 ## Agent Descriptions
 
-### code-planner (Approval-Based - Opus + Thinking)
+### code-planner (Approval-Based - Opus 4.6 + Thinking)
 - Architectural planning and implementation design
 - Creates detailed, actionable implementation plans
 - Follows coding standards
 - Produces plans that require user approval
-- Uses Opus 4.5 with extended thinking for deep reasoning
+- Uses Opus 4.6 with extended thinking for deep reasoning
 - Outputs feed into code-implementer
 
-### code-reviewer (Approval-Based - Opus + Thinking)
+### code-reviewer (Approval-Based - Opus 4.6 + Thinking)
 - Reviews code for quality, security, and best practices
 - Detects anti-patterns and SOLID violations
 - Produces assessment review requiring user approval
-- Uses Opus 4.5 with extended thinking for thorough analysis
+- Uses Opus 4.6 with extended thinking for thorough analysis
 - Does NOT make changes automatically
 - User must explicitly approve before actions are taken
 
-### active-defender (Security Testing - Opus + Thinking)
+### active-defender (Security Testing - Opus 4.6 + Thinking)
 - Offensive security testing with Active Defender mindset
 - Probes for vulnerabilities and bypasses
-- Uses Opus 4.5 with extended thinking for deep security analysis
+- Uses Opus 4.6 with extended thinking for deep security analysis
 - Provides vulnerability assessment and attack vector analysis
 
 ### code-implementer (Action Agent - Sonnet)
@@ -55,7 +55,7 @@ This directory contains your global AI agents for specialized development tasks.
 ### Two-Stage Development Workflow
 
 ```
-code-planner (Opus + Thinking)    →    code-implementer (Sonnet)
+code-planner (Opus 4.6 + Thinking)    →    code-implementer (Sonnet)
          ↓                                      ↓
    Detailed Plan                         Working Code
          ↓                                      ↓
@@ -129,9 +129,9 @@ agent-name/
 
 | Role | Model | Thinking | Rationale |
 |------|-------|----------|-----------|
-| Planning | Opus 4.5 | Enabled | Deep reasoning for design |
-| Review | Opus 4.5 | Enabled | Thorough code analysis |
-| Security | Opus 4.5 | Enabled | Critical assessment |
+| Planning | Opus 4.6 | Enabled | Deep reasoning for design |
+| Review | Opus 4.6 | Enabled | Thorough code analysis |
+| Security | Opus 4.6 | Enabled | Critical assessment |
 | Implementation | Sonnet 4.5 | Disabled | Fast execution |
 | Test Writing | Sonnet 4.5 | Disabled | Efficient generation |
 

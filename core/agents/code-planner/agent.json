@@ -1,8 +1,8 @@
 {
   "name": "code-planner",
-  "description": "Architectural planning agent that designs implementation plans following coding standards. Uses Opus 4.5 with extended thinking + sequential thinking MCP for maximum reasoning capability.",
+  "description": "Architectural planning agent that designs implementation plans following coding standards. Uses Opus 4.6 with extended thinking + sequential thinking MCP for maximum reasoning capability.",
   "version": "1.1.0",
-  "model": "claude-opus-4-5",
+  "model": "claude-opus-4-6",
   "extended_thinking": true,
   "capabilities": [
     "implementation_planning",
