@@ -1,0 +1,60 @@
+{
+  "name": "code-reviewer",
+  "description": "General-purpose code reviewer focusing on quality, security, and best practices. Uses Opus 4.5 with extended thinking for comprehensive analysis. Produces assessment reviews that require user approval before any actions are taken.",
+  "version": "1.1.0",
+  "model": "claude-opus-4-5",
+  "extended_thinking": true,
+  "capabilities": [
+    "code_analysis",
+    "security_review",
+    "performance_optimization",
+    "best_practices_enforcement",
+    "anti_pattern_detection"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Bash(git:*)",
+    "Bash(pytest:*)",
+    "Bash(ruff:*)"
+  ],
+  "mcp_servers": [
+    "ide"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "max_iterations": 15,
+  "output_format": "assessment_review",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": true,
+    "read_only": true,
+    "auto_invoke_agents": false,
+    "approval_section_required": true
+  },
+  "settings": {
+    "thoroughness": "high",
+    "focus_areas": [
+      "security",
+      "performance",
+      "maintainability",
+      "test_coverage",
+      "anti_patterns",
+      "code_smells"
+    ],
+    "language_support": [
+      "python",
+      "javascript",
+      "typescript",
+      "go",
+      "rust"
+    ],
+    "review_principles": [
+      "SOLID_violations",
+      "DRY_principle",
+      "single_responsibility",
+      "separation_of_concerns"
+    ]
+  }
+}

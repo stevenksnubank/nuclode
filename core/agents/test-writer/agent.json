@@ -1,0 +1,63 @@
+{
+  "name": "test-writer",
+  "description": "Expert test engineer specializing in comprehensive test suite creation, edge case identification, and test-driven development. Fast execution for efficient test generation.",
+  "version": "1.0.0",
+  "model": "claude-sonnet-4-5",
+  "extended_thinking": false,
+  "capabilities": [
+    "unit_test_generation",
+    "integration_test_design",
+    "edge_case_identification",
+    "test_coverage_analysis",
+    "mocking_and_fixtures",
+    "property_based_testing",
+    "security_test_cases"
+  ],
+  "tools": [
+    "Read",
+    "Write",
+    "Edit",
+    "Grep",
+    "Glob",
+    "Bash(pytest:*)",
+    "Bash(coverage:*)",
+    "Bash(git:*)"
+  ],
+  "mcp_servers": [
+    "ide"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "max_iterations": 20,
+  "output_format": "test_suite",
+  "settings": {
+    "testing_frameworks": [
+      "pytest",
+      "unittest",
+      "jest",
+      "mocha",
+      "go test",
+      "cargo test"
+    ],
+    "focus_areas": [
+      "edge_cases",
+      "error_handling",
+      "security_scenarios",
+      "performance_boundaries",
+      "integration_points",
+      "race_conditions"
+    ],
+    "test_principles": [
+      "AAA_pattern",
+      "single_responsibility",
+      "isolated_tests",
+      "deterministic_tests",
+      "fast_feedback"
+    ],
+    "coverage_goals": {
+      "line_coverage": 90,
+      "branch_coverage": 85,
+      "critical_paths": 100
+    }
+  }
+}

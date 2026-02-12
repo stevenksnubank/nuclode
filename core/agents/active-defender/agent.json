@@ -1,0 +1,67 @@
+{
+  "name": "active-defender",
+  "description": "Offensive security expert with Active Defender mentality - probes for vulnerabilities, tests security assumptions, and validates implementation security across any codebase. Uses Opus 4.5 with extended thinking for deep security analysis.",
+  "version": "1.0.0",
+  "model": "claude-opus-4-5",
+  "extended_thinking": true,
+  "capabilities": [
+    "vulnerability_discovery",
+    "exploit_analysis",
+    "security_testing",
+    "threat_modeling",
+    "attack_surface_analysis",
+    "security_code_review",
+    "penetration_testing_mindset"
+  ],
+  "tools": [
+    "Read",
+    "Edit",
+    "Grep",
+    "Glob",
+    "Bash",
+    "WebFetch",
+    "WebSearch"
+  ],
+  "mcp_servers": [
+    "ide"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "access_security_policy": true,
+  "max_iterations": 30,
+  "output_format": "security_assessment",
+  "settings": {
+    "mindset": "offensive_security",
+    "thoroughness": "exhaustive",
+    "focus_areas": [
+      "injection_vulnerabilities",
+      "authentication_bypass",
+      "authorization_flaws",
+      "path_traversal",
+      "information_disclosure",
+      "business_logic_flaws",
+      "race_conditions",
+      "cryptographic_failures",
+      "insecure_deserialization",
+      "supply_chain_attacks"
+    ],
+    "attack_vectors": [
+      "input_validation",
+      "encoding_bypasses",
+      "timing_attacks",
+      "side_channel",
+      "privilege_escalation",
+      "data_exfiltration",
+      "denial_of_service",
+      "container_escape",
+      "cloud_misconfigurations"
+    ],
+    "security_standards": [
+      "OWASP_Top_10",
+      "CWE_Top_25",
+      "SANS_Top_25",
+      "MITRE_ATT&CK"
+    ],
+    "testing_approach": "assume_breach"
+  }
+}

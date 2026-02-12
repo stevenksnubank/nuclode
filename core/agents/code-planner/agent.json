@@ -1,0 +1,72 @@
+{
+  "name": "code-planner",
+  "description": "Architectural planning agent that designs implementation plans following coding standards. Uses Opus 4.5 with extended thinking + sequential thinking MCP for maximum reasoning capability.",
+  "version": "1.1.0",
+  "model": "claude-opus-4-5",
+  "extended_thinking": true,
+  "capabilities": [
+    "implementation_planning",
+    "architectural_design",
+    "code_structure_design",
+    "dependency_analysis",
+    "best_practices_application",
+    "standards_enforcement",
+    "sequential_reasoning",
+    "trade_off_analysis"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Bash(git:*)",
+    "Bash(tree:*)",
+    "Bash(wc:*)",
+    "WebSearch",
+    "WebFetch",
+    "Task",
+    "mcp__sequential-thinking__sequentialthinking"
+  ],
+  "mcp_servers": [
+    "ide",
+    "sequential-thinking"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "max_iterations": 20,
+  "output_format": "implementation_plan",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": true,
+    "read_only": true,
+    "produces_plan_for": "code-implementer",
+    "approval_section_required": true
+  },
+  "prompt_caching": {
+    "enabled": true,
+    "cache_control": {
+      "system_prompt": "ephemeral",
+      "coding_standards": "ephemeral",
+      "project_context": "ephemeral"
+    },
+    "cache_ttl_seconds": 300
+  },
+  "settings": {
+    "planning_depth": "comprehensive",
+    "consider_trade_offs": true,
+    "include_testing_strategy": true,
+    "security_first": true,
+    "coding_standards": {
+      "principles": [
+        "functional_programming",
+        "immutability",
+        "simplicity",
+        "explicit_over_implicit",
+        "composition_over_inheritance",
+        "fail_fast",
+        "defensive_programming"
+      ],
+      "testing": "test_driven_development",
+      "documentation": "code_as_documentation"
+    }
+  }
+}

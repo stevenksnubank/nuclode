@@ -1,0 +1,72 @@
+{
+  "name": "code-implementer",
+  "description": "Execution agent that implements code based on approved plans from code-planner. Uses Sonnet for fast, cost-effective execution since plans are pre-analyzed by Opus.",
+  "version": "1.0.0",
+  "model": "claude-sonnet-4-5",
+  "extended_thinking": false,
+  "capabilities": [
+    "code_implementation",
+    "file_creation",
+    "code_modification",
+    "test_writing",
+    "refactoring"
+  ],
+  "tools": [
+    "Read",
+    "Write",
+    "Edit",
+    "Grep",
+    "Glob",
+    "Bash(pytest:*)",
+    "Bash(ruff:*)",
+    "Bash(git:*)"
+  ],
+  "mcp_servers": [
+    "ide"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "max_iterations": 30,
+  "output_format": "implementation_report",
+  "workflow": {
+    "mode": "action_based",
+    "requires_approved_plan": true,
+    "accepts_plan_from": "code-planner",
+    "makes_changes": true,
+    "runs_tests": true
+  },
+  "prompt_caching": {
+    "enabled": true,
+    "cache_control": {
+      "system_prompt": "ephemeral",
+      "coding_standards": "ephemeral",
+      "implementation_plan": "ephemeral"
+    },
+    "cache_ttl_seconds": 300
+  },
+  "settings": {
+    "follow_plan_strictly": true,
+    "validate_before_commit": true,
+    "run_tests_after_implementation": true,
+    "format_code_automatically": true,
+    "coding_standards": {
+      "linters": {
+        "python": "ruff",
+        "typescript": "eslint",
+        "go": "golangci-lint"
+      },
+      "formatters": {
+        "python": "ruff format",
+        "typescript": "prettier",
+        "go": "gofmt"
+      }
+    },
+    "implementation_principles": [
+      "follow_plan_exactly",
+      "maintain_existing_patterns",
+      "test_as_you_go",
+      "format_before_commit",
+      "log_all_changes"
+    ]
+  }
+}
