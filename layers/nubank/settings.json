@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "glean-core@glean-plugins": true
+  }
+}

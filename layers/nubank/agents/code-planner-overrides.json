@@ -1,0 +1,14 @@
+{
+  "additional_tools": [
+    "mcp__clojure__read_file",
+    "mcp__clojure__clojure_inspect_project",
+    "mcp__clojure__grep",
+    "mcp__clojure__glob_files"
+  ],
+  "additional_mcp_servers": [
+    "clojure"
+  ],
+  "additional_capabilities": [
+    "clojure_project_analysis"
+  ]
+}
