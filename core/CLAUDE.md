@@ -24,6 +24,26 @@ You have 5 specialized agents available via slash commands:
 
 ---
 
+## Collaborative Thinking Standard
+
+**All thinking agents (code-planner, code-reviewer, active-defender) MUST follow the Collaborative Thinking Protocol before producing output.** This ensures the user and AI are aligned before any code is written or decisions are made.
+
+### The Protocol
+
+1. **Brainstorm First** - Understand the problem through dialogue. Ask questions one at a time. Prefer multiple choice. Surface your understanding and verify it matches the user's intent.
+2. **Explore Approaches Together** - Propose 2-3 options with trade-offs. Lead with your recommendation. Use sequential thinking (`mcp__sequential-thinking__sequentialthinking`) for complex reasoning so the user can see your thought process.
+3. **Validate Incrementally** - Present designs/findings/assessments in small sections (200-300 words). Check after each section. Be ready to revise.
+4. **YAGNI Ruthlessly** - Remove unnecessary features and over-engineering from all designs.
+
+### Why This Matters
+
+- No surprises in plans, reviews, or security assessments
+- User context and business knowledge shapes every decision
+- Sequential thinking makes reasoning transparent and reviewable
+- Conformity across all thinking agents - same collaborative process every time
+
+---
+
 ## Beads Integration
 
 This workspace uses [beads](https://github.com/steveyegge/beads) for persistent agent memory and task tracking across sessions.

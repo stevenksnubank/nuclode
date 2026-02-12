@@ -1,7 +1,7 @@
 {
   "name": "active-defender",
-  "description": "Offensive security expert with Active Defender mentality - probes for vulnerabilities, tests security assumptions, and validates implementation security across any codebase. Uses Opus 4.6 with extended thinking for deep security analysis.",
-  "version": "1.0.0",
+  "description": "Offensive security expert with Active Defender mentality - probes for vulnerabilities, tests security assumptions, and validates implementation security across any codebase. Uses Opus 4.6 with extended thinking + sequential thinking for deep, collaborative security analysis.",
+  "version": "1.1.0",
   "model": "claude-opus-4-6",
   "extended_thinking": true,
   "capabilities": [
@@ -11,7 +11,9 @@
     "threat_modeling",
     "attack_surface_analysis",
     "security_code_review",
-    "penetration_testing_mindset"
+    "penetration_testing_mindset",
+    "collaborative_brainstorming",
+    "sequential_reasoning"
   ],
   "tools": [
     "Read",
@@ -20,16 +22,21 @@
     "Glob",
     "Bash",
     "WebFetch",
-    "WebSearch"
+    "WebSearch",
+    "mcp__sequential-thinking__sequentialthinking"
   ],
   "mcp_servers": [
-    "ide"
+    "ide",
+    "sequential-thinking"
   ],
   "project_context": true,
   "access_project_context": true,
   "access_security_policy": true,
   "max_iterations": 30,
   "output_format": "security_assessment",
+  "workflow": {
+    "collaborative_thinking": true
+  },
   "settings": {
     "mindset": "offensive_security",
     "thoroughness": "exhaustive",
