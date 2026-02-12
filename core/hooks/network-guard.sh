@@ -2,7 +2,12 @@
 # network-guard.sh - PreToolUse hook to block network requests to unapproved domains
 #
 # Prevents AI agents from exfiltrating data to unauthorized external services.
-# Works as a Claude Code PreToolUse hook for Bash and WebFetch tool calls.
+# Works as a Claude Code PreToolUse hook for Bash, WebFetch, and WebSearch tool calls.
+#
+# Coverage limitations:
+#   - Only intercepts Bash, WebFetch, and WebSearch tools
+#   - MCP server tools that make HTTP requests directly are NOT covered
+#   - For comprehensive network protection, consider an OS-level firewall or HTTP proxy
 #
 # Requires: jq
 #
@@ -154,6 +159,28 @@ case "$TOOL_NAME" in
         # 2. Check allowlist
         if ! domain_in_list "$DOMAIN" "$ALLOWED_DOMAINS_FILE"; then
             deny "$DOMAIN" "Domain is not on the approved allowlist"
+        fi
+
+        allow
+        ;;
+
+    WebSearch)
+        # WebSearch is read-only (queries, not uploads) but check for URL exfiltration
+        # in search queries (e.g., searching for a URL to leak data via referer)
+        QUERY="$(echo "$TOOL_INPUT" | jq -r '.query // empty')"
+        [ -z "$QUERY" ] && allow
+
+        # Extract any URLs embedded in the search query
+        URLS="$(echo "$QUERY" | grep -oE 'https?://[^ "'"'"'|;&)}>]+' 2>/dev/null || true)"
+        if [ -n "$URLS" ]; then
+            while IFS= read -r url; do
+                [ -z "$url" ] && continue
+                DOMAIN="$(extract_domain "$url")"
+                [ -z "$DOMAIN" ] && continue
+                if domain_in_list "$DOMAIN" "$BLOCKED_DOMAINS_FILE"; then
+                    deny "$DOMAIN" "Blocked domain found in WebSearch query"
+                fi
+            done <<< "$URLS"
         fi
 
         allow
