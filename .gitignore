@@ -5,7 +5,8 @@ debug/
 file-history/
 todos/
 tasks/
-plans/
+# Claude Code runtime plans (not docs/plans/)
+/plans/
 shell-snapshots/
 paste-cache/
 session-env/
