@@ -220,13 +220,14 @@ for layer in "${LAYERS[@]}"; do
     # Deep-merge settings.json (append enabledPlugins)
     if [ -f "$layer_dir/settings.json" ]; then
         if command -v python3 &> /dev/null; then
-            python3 -c "
-import json, sys
+            python3 - "$CLAUDE_DIR/settings.json" "$layer_dir/settings.json" << 'PYEOF'
+import json
+import sys
 
-with open('$CLAUDE_DIR/settings.json') as f:
+with open(sys.argv[1]) as f:
     base = json.load(f)
 
-with open('$layer_dir/settings.json') as f:
+with open(sys.argv[2]) as f:
     overlay = json.load(f)
 
 # Deep merge
@@ -236,9 +237,9 @@ for key, value in overlay.items():
     else:
         base[key] = value
 
-with open('$CLAUDE_DIR/settings.json', 'w') as f:
+with open(sys.argv[1], 'w') as f:
     json.dump(base, f, indent=2)
-"
+PYEOF
             ok "  Merged $layer settings.json"
         else
             warn "  Python3 not found, skipping settings merge for $layer"
@@ -248,20 +249,21 @@ with open('$CLAUDE_DIR/settings.json', 'w') as f:
     # Merge .mcp.json (add servers)
     if [ -f "$layer_dir/.mcp.json" ]; then
         if command -v python3 &> /dev/null; then
-            python3 -c "
+            python3 - "$CLAUDE_DIR/.mcp.json" "$layer_dir/.mcp.json" << 'PYEOF'
 import json
+import sys
 
-with open('$CLAUDE_DIR/.mcp.json') as f:
+with open(sys.argv[1]) as f:
     base = json.load(f)
 
-with open('$layer_dir/.mcp.json') as f:
+with open(sys.argv[2]) as f:
     overlay = json.load(f)
 
 base.setdefault('mcpServers', {}).update(overlay.get('mcpServers', {}))
 
-with open('$CLAUDE_DIR/.mcp.json', 'w') as f:
+with open(sys.argv[1], 'w') as f:
     json.dump(base, f, indent=2)
-"
+PYEOF
             ok "  Merged $layer .mcp.json"
         fi
     fi
@@ -272,16 +274,14 @@ with open('$CLAUDE_DIR/.mcp.json', 'w') as f:
             if [ -f "$override_file" ]; then
                 agent_name=$(basename "$override_file" | sed 's/-overrides.json//')
                 if command -v python3 &> /dev/null; then
-                    python3 -c "
+                    python3 - "$CLAUDE_DIR/agents/$agent_name/agent.json" "$override_file" << 'PYEOF'
 import json
+import sys
 
-agent_file = '$CLAUDE_DIR/agents/$agent_name/agent.json'
-override_file = '$override_file'
-
-with open(agent_file) as f:
+with open(sys.argv[1]) as f:
     agent = json.load(f)
 
-with open(override_file) as f:
+with open(sys.argv[2]) as f:
     overrides = json.load(f)
 
 # Append to arrays
@@ -290,9 +290,9 @@ for key in ['additional_tools', 'additional_mcp_servers', 'additional_capabiliti
     if key in overrides:
         agent.setdefault(target_key, []).extend(overrides[key])
 
-with open(agent_file, 'w') as f:
+with open(sys.argv[1], 'w') as f:
     json.dump(agent, f, indent=2)
-"
+PYEOF
                     ok "  Applied $agent_name overrides"
                 fi
             fi
