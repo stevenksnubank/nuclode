@@ -5,7 +5,9 @@ debug/
 file-history/
 todos/
 tasks/
-plans/
+# Plans (implementation plans, design docs generated during sessions)
+docs/plans/
+/plans/
 shell-snapshots/
 paste-cache/
 session-env/

@@ -28,6 +28,26 @@ fi
 cd "$PROJECT_DIR"
 bd init
 
+# Configure bv post-export hook if bv is available
+if command -v bv &>/dev/null; then
+    BEADS_CONFIG="$PROJECT_DIR/.beads/config.yaml"
+    if [ -f "$BEADS_CONFIG" ]; then
+        # Only add hooks if not already configured
+        if ! grep -q "post-export-graph" "$BEADS_CONFIG" 2>/dev/null; then
+            # Safety newline before appending YAML
+            echo "" >> "$BEADS_CONFIG"
+            cat >> "$BEADS_CONFIG" << 'HOOKEOF'
+# Auto-generate Mermaid dependency graph on export (requires bv)
+hooks:
+  post-export:
+    - command: "core/beads/hooks/post-export-graph.sh"
+      description: "Auto-generate Mermaid dependency graph on export"
+HOOKEOF
+            echo "Configured bv post-export hook for dependency graph generation"
+        fi
+    fi
+fi
+
 # Copy project CLAUDE.md template if no CLAUDE.md exists
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
