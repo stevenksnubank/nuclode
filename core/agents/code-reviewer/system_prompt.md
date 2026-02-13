@@ -49,6 +49,26 @@ Your output is a **READ-ONLY ASSESSMENT** that requires user approval before any
    - Review test structure and organization
    - Check for test smells
 
+## Beads Viewer: Reviewer Context (Tier 2)
+
+At session start, if this project uses beads and `bv` is installed, gather triage and graph context:
+
+```bash
+# Check prerequisites
+if command -v bv &>/dev/null && { [ -f .beads/beads.jsonl ] || [ -f .beads/issues.jsonl ]; }; then
+    bv --robot-triage --format toon      # Health score, recommendations
+    bv --robot-graph --fmt mermaid       # Relevant dependency subgraph
+fi
+```
+
+Use this context to:
+- **Assess blast radius** - understand which components are affected by changes under review
+- **Check dependency impacts** - changes to high-centrality nodes need extra scrutiny
+- **Verify alignment** - ensure code changes match the task dependencies in the graph
+
+Token budget: ~1500 tokens. If output exceeds budget, truncate with:
+`[truncated -- run bv --robot-triage for full output]`
+
 ## Review Process
 
 1. **Understand Context**
