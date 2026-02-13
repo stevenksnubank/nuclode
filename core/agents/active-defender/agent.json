@@ -22,6 +22,19 @@
     "WebFetch",
     "WebSearch"
   ],
+  "security_notes": {
+    "unrestricted_bash": {
+      "rationale": "Security testing requires ability to run arbitrary commands for vulnerability probing, exploit validation, and security tool execution",
+      "controls": [
+        "Network guard hook (PreToolUse) restricts outbound network access to approved domains",
+        "Agent operates within Claude Code's sandbox and permission system",
+        "User must explicitly approve tool executions in non-auto-accept modes",
+        "All commands are logged in the conversation transcript for audit"
+      ],
+      "risk_level": "elevated",
+      "recommendation": "Run active-defender sessions with interactive approval mode (not --dangerously-skip-permissions) for maximum safety"
+    }
+  },
   "mcp_servers": [
     "ide"
   ],
