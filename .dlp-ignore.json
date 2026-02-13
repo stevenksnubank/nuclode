@@ -1,0 +1,12 @@
+[
+    {
+        "path": "core/hooks/test-network-guard.sh",
+        "policy": "CredentialPolicy",
+        "justification": "Test file contains synthetic URL patterns with fake userinfo to validate URL parsing security. No real credentials."
+    },
+    {
+        "path": "core/hooks/test-network-guard.sh",
+        "policy": "EmailPolicy",
+        "justification": "Test file contains synthetic URLs with @ symbols to test userinfo extraction. Not real email addresses."
+    }
+]

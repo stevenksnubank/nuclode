@@ -28,6 +28,9 @@ plugins/
 .env
 .env.*
 
+# Worktrees
+.worktrees/
+
 # OS files
 .DS_Store
 Thumbs.db

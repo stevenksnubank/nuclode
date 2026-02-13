@@ -34,20 +34,51 @@ load_domains() {
     fi
 }
 
-# Extract domain from a URL
+# Extract domain from a URL using Python's urllib for robust parsing.
+# Falls back to conservative bash parsing if python3 unavailable.
 extract_domain() {
     local url="$1"
-    # Remove protocol prefix
+
+    # Primary: use Python's urllib.parse for correct URL parsing
+    # This handles: embedded credentials, IPv6, punycode, edge cases
+    if command -v python3 &>/dev/null; then
+        local result
+        result="$(python3 -c "
+import sys
+from urllib.parse import urlparse
+
+url = sys.argv[1]
+# Ensure URL has a scheme for urlparse to work correctly
+if '://' not in url and not url.startswith('//'):
+    url = 'https://' + url
+parsed = urlparse(url)
+hostname = parsed.hostname or ''
+# hostname already strips brackets from IPv6 and lowercases
+print(hostname)
+" "$url" 2>/dev/null)"
+        if [ -n "$result" ]; then
+            echo "$result"
+            return
+        fi
+    fi
+
+    # Fallback: conservative bash parsing (deny if ambiguous)
     local domain="${url#*://}"
-    # Remove path, query, fragment
     domain="${domain%%/*}"
     domain="${domain%%\?*}"
     domain="${domain%%#*}"
-    # Remove port
-    domain="${domain%%:*}"
-    # Remove userinfo (user:pass@)
-    domain="${domain##*@}"
-    # Lowercase
+    # If domain contains @, it has userinfo - extract host after last @
+    if [[ "$domain" == *@* ]]; then
+        domain="${domain##*@}"
+    fi
+    # Remove port (but handle IPv6 brackets first)
+    if [[ "$domain" == \[* ]]; then
+        # IPv6: extract between brackets
+        domain="${domain#\[}"
+        domain="${domain%%\]*}"
+    else
+        domain="${domain%%:*}"
+    fi
     echo "$domain" | tr '[:upper:]' '[:lower:]'
 }
 
