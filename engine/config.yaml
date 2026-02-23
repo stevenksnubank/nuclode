@@ -1,0 +1,20 @@
+engine:
+  root_lm:
+    backend: "anthropic"
+    model: "latest-opus"
+    extended_thinking: true
+    max_iterations: 30
+  sub_lm:
+    high_ambiguity:
+      backend: "anthropic"
+      model: "latest-sonnet"
+    low_ambiguity:
+      backend: "anthropic"
+      model: "latest-haiku"
+  threshold_tokens: 50000
+
+guardrails:
+  enabled: true
+  max_cost_per_run_usd: 50.00
+  warn_cost_threshold_usd: 30.00
+  max_sub_lm_calls: 500

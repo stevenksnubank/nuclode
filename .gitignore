@@ -37,6 +37,12 @@ plugins/
 .DS_Store
 Thumbs.db
 
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
 # Editor files
 *.swp
 *.swo
