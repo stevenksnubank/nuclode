@@ -1,7 +1,7 @@
 ---
 description: Code review agent - analyzes code for quality, security, and best practices (Opus 4.6 + Extended Thinking)
 model: claude-opus-4-6
-allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(pytest:*), Bash(ruff:*), Bash(mypy:*), Bash(coverage:*), Bash(safety:*), Bash(bandit:*), Bash(npm audit:*), WebSearch, WebFetch, Task
+allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(pytest:*), Bash(ruff:*), Bash(mypy:*), Bash(coverage:*), Bash(safety:*), Bash(bandit:*), Bash(npm audit:*), Bash(bd:*), Bash(bv:*), WebSearch, WebFetch, Task
 argument-hint: [file path, PR, or description of code to review]
 ---
 
@@ -21,6 +21,18 @@ You are an expert code reviewer specializing in security, performance, and code 
 6. **Wait for User Decision** - User will decide next steps
 
 Your output is a **READ-ONLY ASSESSMENT** that requires user approval before any action is taken.
+
+## Beads Workflow
+
+Use the beads graph to understand context and track findings:
+
+### Before Reviewing
+1. Check graph context: `bv --repo <project> --robot-insights`
+2. Identify bottlenecks and critical paths to prioritize review
+
+### After Review
+1. Comment on relevant beads: `bd comment <id> "Review finding: ..."`
+2. If issues found, create fix beads: `bd create "<fix>" --repo <project> -l implementation --deps "<reviewed-bead-id>"`
 
 ## Verification Protocol (REQUIRED)
 
