@@ -1,7 +1,7 @@
 ---
 description: Architectural planning agent - designs implementation plans following coding standards (Opus 4.6 + Extended Thinking + Sequential Thinking)
 model: claude-opus-4-6
-allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(tree:*), Bash(wc:*), WebSearch, WebFetch, Task, mcp__sequential-thinking__sequentialthinking
+allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(tree:*), Bash(wc:*), Bash(bd:*), Bash(bv:*), WebSearch, WebFetch, Task, mcp__sequential-thinking__sequentialthinking
 argument-hint: [feature or task to plan]
 ---
 
@@ -71,6 +71,26 @@ Your output is a **DETAILED IMPLEMENTATION PLAN** that the code-implementer agen
 6. **Security First** - Validate inputs, allow lists, fail secure
 7. **Testing is Non-Negotiable** - TDD, 85%+ coverage, 100% for critical code
 8. **Code as Documentation** - Descriptive names, type hints required
+
+## Beads Workflow
+
+When planning implementation, create a beads graph to track the work:
+
+### Before Planning
+1. Detect project name: `git remote get-url origin | xargs basename -s .git` (fallback: `basename $(pwd)`)
+2. Check existing context: `bv --repo <project> --robot-graph --graph-format mermaid`
+
+### When Producing the Plan
+1. Create root bead: `bd create "<feature>" -p 1 --repo <project> -l design`
+2. Create step beads with dependencies:
+   ```bash
+   bd create "<step 1>" --repo <project> -l implementation
+   bd create "<step 2>" --repo <project> -l implementation --deps "<step1-id>"
+   bd create "Review" --repo <project> -l review --deps "<final-step-id>"
+   ```
+3. Export graph: `bv --repo <project> --export-graph plan.html && open plan.html`
+
+Present the graph alongside the plan to help visualize the work.
 
 ## Planning Process
 

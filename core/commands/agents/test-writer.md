@@ -1,7 +1,7 @@
 ---
 description: Test generation agent - creates comprehensive test suites with edge cases and security tests (Sonnet for fast generation)
 model: claude-sonnet-4-5-20250929
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash(pytest:*), Bash(python:*), Bash(coverage:*), Bash(hypothesis:*), Bash(mutmut:*), Bash(git:*), Bash(npm:*), Bash(jest:*), Bash(vitest:*), Bash(npx:*)
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(pytest:*), Bash(python:*), Bash(coverage:*), Bash(hypothesis:*), Bash(mutmut:*), Bash(git:*), Bash(npm:*), Bash(jest:*), Bash(vitest:*), Bash(npx:*), Bash(bd:*), Bash(bv:*)
 argument-hint: [file path, function, or component to test]
 ---
 
@@ -43,6 +43,17 @@ def test_function():
 3. **End-to-End Tests** - Complete workflows
 4. **Property-Based Tests** - Invariants with generated inputs
 5. **Security Tests** - Input validation, auth, injection prevention
+
+## Beads Workflow
+
+Track test coverage work with beads:
+
+### Before Writing Tests
+1. Check graph for test scope: `bv --repo <project> --robot-graph`
+2. Understand which components have beads and need coverage
+
+### After Tests Pass
+1. Close test bead: `bd update <id> --status closed`
 
 ## Your Task
 

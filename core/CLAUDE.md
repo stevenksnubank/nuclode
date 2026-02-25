@@ -26,17 +26,38 @@ You have 5 specialized agents available via slash commands:
 
 ## Beads Integration
 
-This workspace uses [beads](https://github.com/steveyegge/beads) for persistent agent memory and task tracking across sessions.
+This workspace uses [beads](https://github.com/steveyegge/beads) for persistent task tracking. The beads dependency graph drives parallel agent dispatch.
 
-### Agent Beads Workflow
-- At session start, check `bd ready` for unblocked tasks
-- Claim work with `bd update <id> --claim`
-- File new issues with `bd create "title"` for tasks >2 minutes
-- Close completed work with `bd close <id> -m "description"`
-- Use `bv --robot-next` (never bare `bv`) for agent-friendly task selection
+### How It Works
 
-### Per-Project Setup
-Run `nuclode init` in any project to initialize beads tracking.
+1. **Planner creates the graph** — beads with deps represent the plan
+2. **Read unblocked beads**: `bv --repo <project> --robot-plan`
+3. **Dispatch agents in parallel** — each unblocked bead gets an agent
+4. **As beads close, new ones unblock** — check graph, dispatch next wave
+5. **Review/security run last** — when implementation complete
+
+### Agent Beads Commands
+
+| Agent | Before Work | After Work |
+|-------|-------------|------------|
+| code-planner | `bv --robot-graph` | `bd create`, `bv --export-graph` |
+| code-implementer | `bv --robot-next`, `bd update --status in_progress` | `bd update --status closed` |
+| code-reviewer | `bv --robot-insights` | `bd comment`, `bd create` (fix beads) |
+| test-writer | `bv --robot-graph` | `bd update --status closed` |
+| active-defender | `bv --robot-graph` | `bd create` (security beads) |
+
+### Project Scoping
+
+All beads live in nuclode's `.beads/` database. Use `--repo <project>` to scope:
+
+```bash
+bd create "Add auth" --repo sellma -l implementation
+bv --repo sellma --robot-plan
+```
+
+### Graph-Driven Dispatch
+
+For wave-based parallel execution, see the `beads-dispatch` skill in `core/skills/`.
 
 ---
 
