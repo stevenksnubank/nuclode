@@ -1,9 +1,9 @@
 """CLI entry point for the codebase analysis recipe.
 
 Usage:
-    python -m recipes.codebase_analysis /path/to/project
-    python -m recipes.codebase_analysis ~/dev/nu/financial-calculator --mode security
-    python -m recipes.codebase_analysis ~/dev/nu/espetinho --force --nrepl-port 7888
+    python -m knowledge.recipes.codebase_analysis /path/to/project
+    python -m knowledge.recipes.codebase_analysis ~/dev/nu/financial-calculator --mode security
+    python -m knowledge.recipes.codebase_analysis ~/dev/nu/espetinho --force --nrepl-port 7888
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from knowledge.recipes.codebase_analysis.orchestrator import CodebaseAnalyzer
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m recipes.codebase_analysis",
+        prog="python -m knowledge.recipes.codebase_analysis",
         description="Analyze a codebase and store results as beads.",
     )
     parser.add_argument(
@@ -54,7 +54,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Load context and check staleness only — no engine invocation, no API cost.",
+        help="Load context and show flow groups — no API calls, no cost.",
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -101,13 +101,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {ns}")
 
     if args.dry_run:
-        # Load context to show what would be analyzed
+        from knowledge.engine.chunking import partition_flow_groups
         from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context
 
         ctx = load_codebase_context(project_dir, backend)
+        groups = partition_flow_groups(ctx.structure)
         print(f"Namespaces: {len(ctx.structure.namespaces)}")
-        for ns in ctx.structure.namespaces:
-            print(f"  - {ns.name} ({ns.layer or 'unknown'})")
+        print(f"Flow groups: {len(groups)}")
+        for g in groups:
+            layers = sorted({ns.layer or "unknown" for ns in g.namespaces})
+            print(f"  - {g.name} ({len(g.namespaces)} ns, layers: {', '.join(layers)})")
+            if g.entry_points:
+                print(f"    entry: {', '.join(g.entry_points)}")
+            if g.exit_points:
+                print(f"    exit:  {', '.join(g.exit_points)}")
         print("\nDry run complete — no API calls made.")
         return 0
 
@@ -116,10 +123,16 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\nResult:     {result.status}")
     print(f"Namespaces: {result.namespace_count}")
-    if result.engine_result:
-        print(f"Iterations: {result.engine_result.iterations}")
-        cost = result.engine_result.cost_summary.get("total_cost_usd", "unknown")
+
+    if result.pipeline_result:
+        pr = result.pipeline_result
+        print(f"Groups:     {pr.groups_succeeded}/{pr.groups_total} succeeded")
+        cost = pr.cost_summary.get("total_cost_usd", "unknown")
         print(f"Cost:       ${cost}")
+        if pr.validation_errors:
+            print(f"Errors:     {len(pr.validation_errors)}")
+            for name, err in pr.validation_errors:
+                print(f"  - {name}: {err}")
 
     if result.status == "completed":
         verified = analyzer.verify_graph()

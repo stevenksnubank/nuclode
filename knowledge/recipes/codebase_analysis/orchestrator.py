@@ -17,10 +17,12 @@ from enum import Enum
 from pathlib import Path
 
 from knowledge.backends.base import LanguageBackend
+from knowledge.engine.chunking import partition_flow_groups
 from knowledge.engine.config import EngineConfig, load_config
+from knowledge.engine.pipeline import PipelineResult, PipelineRunner
 from knowledge.engine.runner import EngineResult, EngineRunner
-from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools
-from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context
+from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools, reduce_to_beads
+from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context, load_source_map
 from knowledge.recipes.codebase_analysis.prompts import build_analysis_prompt
 
 logger = logging.getLogger(__name__)
@@ -61,7 +63,8 @@ class AnalysisResult:
 
     Attributes:
         status: "completed", "skipped_fresh", "budget_exceeded", "error".
-        engine_result: The raw engine result, if engine was invoked.
+        engine_result: The raw engine result, if engine was invoked (legacy REPL path).
+        pipeline_result: The pipeline result, if pipeline was used.
         staleness: The staleness check result.
         namespace_count: Number of namespaces analyzed.
         commit_sha: Git SHA stored as metadata after analysis.
@@ -72,6 +75,7 @@ class AnalysisResult:
     staleness: StalenessResult
     namespace_count: int
     commit_sha: str | None
+    pipeline_result: PipelineResult | None = None
 
 
 class CodebaseAnalyzer:
@@ -235,49 +239,45 @@ class CodebaseAnalyzer:
             context.project_name,
         )
 
-        # Build prompt
-        logger.info("Building analysis prompt (mode=%s)", mode)
-        prompt = build_analysis_prompt(
-            project_name=context.project_name,
-            structure_summary=context.structure_summary,
+        # Partition into flow groups (deterministic, no LM)
+        flow_groups = partition_flow_groups(context.structure)
+        logger.info("Partitioned into %d flow groups", len(flow_groups))
+
+        # Load source code for sub-LM prompts
+        source_by_namespace = load_source_map(context.structure, self._project_dir)
+
+        # Run deterministic pipeline (parallel sub-LM calls, schema validation)
+        pipeline = PipelineRunner(self._config)
+        pipeline_result = pipeline.run(
+            groups=flow_groups,
+            source_by_namespace=source_by_namespace,
             mode=mode,
         )
 
-        # Get beads tools (writes to output_dir via db_path)
-        try:
-            custom_tools = get_custom_tools(self._db_path)
-        except (TypeError, ValueError):
-            logger.warning("Beads tools unavailable, running without them")
-            custom_tools = {}
-
-        # Run engine
-        logger.info(
-            "Starting engine: root=%s, sub_high=%s, sub_low=%s",
-            self._config.root_model,
-            self._config.sub_lm_high_model,
-            self._config.sub_lm_low_model,
-        )
-        runner = EngineRunner(self._config)
-        engine_result = runner.run(
-            context=context.structure_summary,
-            custom_tools=custom_tools,
-            system_prompt=prompt,
-            structure_summary=context.structure_summary,
-        )
-
-        logger.info("Engine finished: status=%s, iterations=%d", engine_result.status, engine_result.iterations)
+        # Mechanical reduce: validated JSON → beads
+        if pipeline_result.analyses:
+            reduce_summary = reduce_to_beads(
+                pipeline_result.analyses, project_dir=self._project_dir
+            )
+            logger.info(
+                "Reduce: %d beads, %d links, %d tags",
+                reduce_summary["beads_created"],
+                reduce_summary["links_created"],
+                reduce_summary["tags_applied"],
+            )
 
         # Store metadata on success (writes to output_dir)
         commit_sha = staleness.current_sha
-        if engine_result.status == "completed" and commit_sha:
+        if pipeline_result.status == "completed" and commit_sha:
             self.store_analysis_metadata(commit_sha)
 
         return AnalysisResult(
-            status=engine_result.status,
-            engine_result=engine_result,
+            status=pipeline_result.status,
+            engine_result=None,
             staleness=staleness,
             namespace_count=len(context.structure.namespaces),
             commit_sha=commit_sha,
+            pipeline_result=pipeline_result,
         )
 
     def run_incremental(

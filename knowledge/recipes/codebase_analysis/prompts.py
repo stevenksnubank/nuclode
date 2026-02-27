@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
+from knowledge.engine.chunking import FlowGroup
+
 CODEBASE_ANALYSIS_PROMPT = """\
 You are analyzing a codebase to produce a structural knowledge graph as beads.
 
@@ -190,3 +194,121 @@ def get_layer_prompt(layer: str) -> str:
     Falls back to a generic prompt if layer is unknown.
     """
     return LAYER_PROMPTS.get(layer, _GENERIC_LAYER_PROMPT)
+
+
+# ---------------------------------------------------------------------------
+# Schema-driven flow-group prompts (deterministic pipeline)
+# ---------------------------------------------------------------------------
+
+_FLOW_GROUP_PROMPT = """\
+Analyze this flow group from the {project_mode} of a Clojure service following Diplomat Architecture.
+
+## Flow Group: {flow_name}
+Entry points: {entry_points}
+Exit points: {exit_points}
+
+## Namespaces in this flow ({ns_count} total):
+{namespace_listing}
+
+## Internal Dependencies:
+{dependency_listing}
+
+## Source Code:
+{source_blocks}
+
+## Instructions
+Analyze the complete data flow through these namespaces. You can see ALL the source code for this flow group.
+
+Identify:
+- The role of each namespace in the flow
+- Data transformations between layers
+- Side effects (datomic, kafka, http, s3, etc.)
+- Bottlenecks (namespaces where multiple flows converge)
+- Coupling issues (cross-domain dependencies, layer violations)
+{security_instructions}
+
+## Required Output Format
+Respond with ONLY a JSON object (no markdown, no explanation) conforming to this schema:
+
+{schema_example}
+
+Every namespace in this flow group MUST appear in the "namespaces" array.
+Every dependency edge MUST appear in the "data_flow" array.
+"""
+
+_SECURITY_ADDENDUM = """\
+- Security findings: unsanitized inputs, missing validation between layers,
+  auth bypass paths, PII exposure, injection vectors, trust boundary violations
+"""
+
+
+def build_flow_group_prompt(
+    group: FlowGroup,
+    source_by_namespace: dict[str, str],
+    mode: str = "structure",
+) -> str:
+    """Build a schema-driven prompt for a single flow group.
+
+    Includes full source code for all namespaces in the group,
+    dependency edges, and the JSON schema template.
+
+    Args:
+        group: The flow group to analyze.
+        source_by_namespace: Map of namespace name -> source code.
+        mode: "structure" or "security".
+
+    Returns:
+        Complete prompt string for the sub-LM.
+    """
+    namespace_listing = "\n".join(
+        f"  - {ns.name} (layer: {ns.layer or 'unknown'})"
+        for ns in sorted(group.namespaces, key=lambda n: n.name)
+    )
+
+    dep_lines = []
+    for from_ns, to_list in sorted(group.internal_deps.items()):
+        for to_ns in to_list:
+            dep_lines.append(f"  {from_ns} depends on {to_ns}")
+    dependency_listing = "\n".join(dep_lines) if dep_lines else "  (no internal dependencies)"
+
+    source_blocks = []
+    for ns in sorted(group.namespaces, key=lambda n: n.name):
+        src = source_by_namespace.get(ns.name, source_by_namespace.get(ns.path, ""))
+        if src:
+            source_blocks.append(f"### {ns.name}\n```clojure\n{src}\n```")
+        else:
+            source_blocks.append(f"### {ns.name}\n(source not available)")
+
+    schema_example = json.dumps({
+        "flow_name": group.name,
+        "entry_points": group.entry_points,
+        "exit_points": group.exit_points,
+        "namespaces": [
+            {
+                "name": "namespace.name",
+                "layer": "logic|model|controller|adapter|wire-in|wire-out|diplomat-datomic|diplomat-http|diplomat-kafka|unknown",
+                "role": "1-2 sentence description of this namespace's purpose in the flow",
+                "side_effects": ["datomic", "kafka", "http", "s3"],
+                "security_notes": "string or null",
+            }
+        ],
+        "data_flow": [
+            {"from": "source.namespace", "to": "target.namespace", "transforms": "description of transformation"}
+        ],
+        "bottlenecks": ["description of bottleneck"],
+        "security_findings": ["description of finding"],
+        "coupling_issues": ["description of coupling issue"],
+    }, indent=2)
+
+    return _FLOW_GROUP_PROMPT.format(
+        project_mode="security posture" if mode == "security" else "structure",
+        flow_name=group.name,
+        entry_points=", ".join(group.entry_points) or "(none identified)",
+        exit_points=", ".join(group.exit_points) or "(none identified)",
+        ns_count=len(group.namespaces),
+        namespace_listing=namespace_listing,
+        dependency_listing=dependency_listing,
+        source_blocks="\n\n".join(source_blocks),
+        security_instructions=_SECURITY_ADDENDUM if mode == "security" else "",
+        schema_example=schema_example,
+    )

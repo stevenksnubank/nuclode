@@ -47,3 +47,6 @@ __pycache__/
 *.swp
 *.swo
 *~
+
+# bv (beads viewer) local config and caches
+.bv/
