@@ -22,6 +22,9 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 
+[tool.setuptools.packages.find]
+include = ["knowledge*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

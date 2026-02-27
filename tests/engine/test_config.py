@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from engine.config import (
+from knowledge.engine.config import (
     MODEL_REGISTRY,
     EngineConfig,
     GuardrailsConfig,
@@ -21,7 +21,7 @@ from engine.config import (
 class TestResolveModel:
 
     def test_resolve_known_alias(self) -> None:
-        assert resolve_model("latest-opus") == "claude-opus-4-6"
+        assert resolve_model("latest-opus") == "anthropic/claude-opus-4-6"
 
     def test_resolve_all_aliases(self) -> None:
         for alias, expected in MODEL_REGISTRY.items():
@@ -29,6 +29,9 @@ class TestResolveModel:
 
     def test_passthrough_concrete_id(self) -> None:
         assert resolve_model("claude-opus-4-6") == "claude-opus-4-6"
+
+    def test_passthrough_anthropic_prefixed_id(self) -> None:
+        assert resolve_model("anthropic/claude-opus-4-6") == "anthropic/claude-opus-4-6"
 
     def test_unknown_alias_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown model alias"):
@@ -58,11 +61,11 @@ class TestEngineConfig:
 
     def test_frozen(self) -> None:
         config = EngineConfig(
-            root_model="claude-opus-4-6",
+            root_model="anthropic/claude-opus-4-6",
             root_extended_thinking=True,
             root_max_iterations=30,
-            sub_lm_high_model="claude-sonnet-4-6",
-            sub_lm_low_model="claude-haiku-4-5-20251001",
+            sub_lm_high_model="anthropic/claude-sonnet-4-6",
+            sub_lm_low_model="anthropic/claude-haiku-4-5-20251001",
             threshold_tokens=50000,
             guardrails=GuardrailsConfig(),
         )
@@ -74,33 +77,33 @@ class TestLoadConfig:
 
     def test_loads_default_config(self) -> None:
         config = load_config()
-        assert config.root_model == "claude-opus-4-6"
+        assert config.root_model == "anthropic/claude-opus-4-6"
         assert config.root_extended_thinking is True
         assert config.root_max_iterations == 30
-        assert config.sub_lm_high_model == "claude-sonnet-4-6"
-        assert config.sub_lm_low_model == "claude-haiku-4-5-20251001"
+        assert config.sub_lm_high_model == "anthropic/claude-sonnet-4-6"
+        assert config.sub_lm_low_model == "anthropic/claude-haiku-4-5-20251001"
         assert config.threshold_tokens == 50000
         assert config.guardrails.enabled is True
 
     def test_missing_config_uses_defaults(self, tmp_path: Path) -> None:
         config = load_config(tmp_path / "nonexistent.yaml")
-        assert config.root_model == "claude-opus-4-6"
+        assert config.root_model == "anthropic/claude-opus-4-6"
         assert config.threshold_tokens == 50000
 
     def test_env_var_overrides_root_model(self) -> None:
-        with patch.dict(os.environ, {"NUCLODE_ROOT_LM_MODEL": "claude-opus-4-6"}):
+        with patch.dict(os.environ, {"NUCLODE_ROOT_LM_MODEL": "anthropic/claude-opus-4-6"}):
             config = load_config()
-            assert config.root_model == "claude-opus-4-6"
+            assert config.root_model == "anthropic/claude-opus-4-6"
 
     def test_env_var_overrides_sub_lm_high(self) -> None:
         with patch.dict(os.environ, {"NUCLODE_SUB_LM_HIGH_MODEL": "latest-opus"}):
             config = load_config()
-            assert config.sub_lm_high_model == "claude-opus-4-6"
+            assert config.sub_lm_high_model == "anthropic/claude-opus-4-6"
 
     def test_env_var_overrides_sub_lm_low(self) -> None:
         with patch.dict(os.environ, {"NUCLODE_SUB_LM_LOW_MODEL": "latest-sonnet"}):
             config = load_config()
-            assert config.sub_lm_low_model == "claude-sonnet-4-6"
+            assert config.sub_lm_low_model == "anthropic/claude-sonnet-4-6"
 
     def test_env_var_disables_guardrails(self) -> None:
         with patch.dict(os.environ, {"NUCLODE_GUARDRAILS_ENABLED": "false"}):
@@ -122,7 +125,7 @@ class TestLoadConfig:
             encoding="utf-8",
         )
         config = load_config(custom)
-        assert config.root_model == "claude-haiku-4-5-20251001"
+        assert config.root_model == "anthropic/claude-haiku-4-5-20251001"
         assert config.root_extended_thinking is False
         assert config.root_max_iterations == 10
         assert config.threshold_tokens == 25000

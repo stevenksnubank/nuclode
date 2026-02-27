@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from engine.gate import (
+from knowledge.engine.gate import (
     DEFAULT_THRESHOLD,
     GateDecision,
     _CHARS_PER_TOKEN,

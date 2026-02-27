@@ -1,113 +1,132 @@
 # nuclode
 
-> nu + claude + code = nucleotide
+A framework that makes AI-assisted development deterministic and reliable.
 
-A portable, cloneable agentic development workspace for [Claude Code](https://claude.ai/claude-code). Ships with 5 specialized AI agents, [beads](https://github.com/steveyegge/beads) integration for persistent agent memory, and a layered architecture for team/company customization.
+Nuclode equips engineers with a structured AI workspace: specialized agents, deterministic codebase analysis, and coding guardrails that produce consistent, high-quality code — regardless of project or codebase.
 
-## Quick Start
+```
+┌─────────────────────────────────────────────────────┐
+│  Agents                                             │
+│  Specialized AI team with structured workflows      │
+│  for planning, building, reviewing, and securing    │
+├─────────────────────────────────────────────────────┤
+│  Knowledge                                          │
+│  Recursive chunking & dependency graphing produce   │
+│  stable, reproducible context from any codebase     │
+├─────────────────────────────────────────────────────┤
+│  Workspace                                          │
+│  Config, guardrails, and coding standards           │
+│  installed directly into Claude Code                │
+└─────────────────────────────────────────────────────┘
+```
+
+Install once. Every project gets the same team, the same analysis depth, the same quality bar.
+
+## Install
 
 ```bash
-# Clone
 git clone https://github.com/yourusername/nuclode.git ~/dev/nuclode
-
-# Install (interactive - picks layers, installs tools)
-cd ~/dev/nuclode && ./setup.sh
-
-# Start using
-claude  # Your workspace is ready
+cd ~/dev/nuclode && ./nuclode install
 ```
 
-## What's Included
+Installs all dependencies, configures your workspace, and adds the `nuclode` CLI to your PATH.
 
-### 5 Specialized Agents
+## How it works
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| **code-planner** | Opus 4.6 + Thinking | Architectural planning, implementation design |
-| **code-implementer** | Sonnet 4.5 | Execute approved plans, write code |
-| **code-reviewer** | Opus 4.6 + Thinking | Code review, quality analysis |
-| **active-defender** | Opus 4.6 + Thinking | Offensive security testing |
-| **test-writer** | Sonnet 4.5 | Generate comprehensive tests |
-
-### Beads Integration
-
-Persistent agent memory across sessions via git-backed issue tracking:
+**Knowledge layer** — Codebases are larger than any context window. Nuclode recursively chunks your code into a dependency graph, then programmatically manages what context reaches each agent — the right depth, for the right task, every time.
 
 ```bash
-nuclode init          # Initialize beads in any project
-bd ready              # See available work
-bv --robot-next       # Agent-friendly task selection
+nuclode analyze /path/to/project
 ```
 
-### Layered Architecture
+**Agent layer** — Five specialized agents consume the knowledge graph and follow structured workflows. Each operates on the same stable understanding of your code.
+
+| Agent | Command | Role |
+|-------|---------|------|
+| **Planner** | `/agents:code-planner` | Architecture and design |
+| **Implementer** | `/agents:code-implementer` | Write code from plans |
+| **Reviewer** | `/agents:code-reviewer` | Quality and correctness |
+| **Test Writer** | `/agents:test-writer` | Generate test coverage |
+| **Defender** | `/agents:active-defender` | Security testing |
+
+**Workspace layer** — Coding standards, network guardrails, and cost limits run underneath everything, keeping output consistent and safe.
+
+## Beads
+
+Beads is the persistent memory system that stores and surfaces knowledge artifacts. When the engine chunks your codebase, the results are stored as beads — structured, linked, queryable units of context that persist across sessions.
+
+```bash
+nuclode init              # initialize beads in a project
+bd ready                  # see available work
+bd query --filter tag:structure   # query the knowledge graph
+bv --robot-graph --fmt mermaid    # visualize dependencies
+```
+
+Agents automatically receive relevant beads context at session start — planners see the full architectural graph, implementers see the namespaces they're working in, reviewers see blast radius. The depth is matched to the agent's role.
+
+This means a new team member can clone a repo, run `bd ready`, and have the same codebase understanding that took the previous session hours to build.
+
+See [docs/BEADS_WORKFLOW.md](docs/BEADS_WORKFLOW.md) for details.
+
+## Project structure
 
 ```
 nuclode/
-├── core/             # Generic workspace (works for anyone)
-├── layers/
-│   └── nubank/       # Company-specific extensions
-└── setup.sh          # Merges core + selected layers → ~/.claude
+├── workspace/          # → installs to ~/.claude/
+│   ├── agents/         #   5 specialized agents
+│   ├── commands/       #   slash commands
+│   ├── skills/         #   agent capabilities
+│   ├── hooks/          #   network guardrails
+│   ├── beads/          #   persistent memory
+│   ├── CLAUDE.md       #   coding standards
+│   └── settings.json   #   workspace config
+│
+├── knowledge/          # deterministic context engine
+│   ├── engine/         #   recursive chunking + cost guardrails
+│   ├── recipes/        #   structured analysis pipelines
+│   └── backends/       #   language-specific extractors
+│
+├── nuclode             # CLI (install, update, analyze, init)
+└── tests/
 ```
 
-## Layer System
+## Extending Nuclode
 
-The core provides generic coding standards and agent configurations. Layers add company-specific or domain-specific extensions:
-
-- **Core**: Coding standards, 5 agents, beads templates, security standards
-- **Layers**: Company tools (MCP servers), naming conventions, compliance requirements
-
-Layers are applied during `setup.sh` and merged into `~/.claude`:
-- `CLAUDE.md` files are concatenated
-- `settings.json` files are deep-merged
-- `.mcp.json` servers are combined
-- Agent overrides extend tool/capability lists
-
-### Creating a Layer
+Nuclode provides the framework. Org-specific standards, tools, and integrations are distributed as plugins through the [ai-agents-plugins](https://github.com/nubank/ai-agents-plugins) marketplace.
 
 ```bash
-mkdir -p layers/mycompany
-# Add: CLAUDE.md, settings.json, .mcp.json, agents/*-overrides.json
-./setup.sh --layer mycompany
+/plugin install glean-mcp@nubank-ai-agents-plugins
+/plugin install clojure-lsp@nubank-ai-agents-plugins
 ```
 
-## Prerequisites
+Plugins add skills, MCP servers, slash commands, agents, and hooks. Nuclode's knowledge layer amplifies every plugin — when agents have a stable dependency graph of your codebase, every tool they use gets better context to work with.
 
-- [Claude Code CLI](https://claude.ai/claude-code)
-- [beads](https://github.com/steveyegge/beads) (optional, setup.sh can install)
-- [beads viewer](https://github.com/Dicklesworthstone/beads_viewer) (optional)
+See the [marketplace contributing guide](https://github.com/nubank/ai-agents-plugins/blob/main/CONTRIBUTING.md) for publishing your own.
 
-## Commands
-
-### nuclode CLI
+## CLI
 
 ```bash
-nuclode init [dir]    # Initialize beads + project template
-nuclode update        # Pull latest and re-run setup
-nuclode layers        # List available layers
+nuclode install       # first-time setup (run as ./nuclode install from repo)
+nuclode update        # pull latest and re-install
+nuclode analyze       # run codebase analysis on a project
+nuclode init          # initialize beads in a project
 ```
 
-### Shell Functions
+## Shell helpers
 
 ```bash
-cw                    # claude-worktree: worktree + Claude in one command
-remove-worktrees      # Clean up worktrees for current repo
+cw                    # create a git worktree and launch Claude Code in it
+remove-worktrees      # clean up old worktrees
 ```
 
-### Agent Workflow
-
-```bash
-/agents:code-planner Add user authentication     # Plan
-/agents:code-implementer [paste approved plan]    # Build
-/agents:code-reviewer src/auth.py                 # Review
-/agents:active-defender Test auth for bypasses    # Security
-/agents:test-writer src/auth.py                   # Tests
-```
+These are added to your shell profile automatically during setup.
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) - Layering system and config merging
-- [Beads Workflow](docs/BEADS_WORKFLOW.md) - Agent-beads interaction flow
-- [Customization](docs/CUSTOMIZATION.md) - Creating layers and adding agents
+- [Architecture](docs/ARCHITECTURE.md)
+- [Knowledge Engine](docs/KNOWLEDGE.md)
+- [Beads Workflow](docs/BEADS_WORKFLOW.md)
+- [Customization](docs/CUSTOMIZATION.md)
 
 ## License
 

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from engine.backends.clojure_nrepl import ClojureNREPLBackend
-from recipes.codebase_analysis.context_loader import (
+from knowledge.backends.clojure_nrepl import ClojureNREPLBackend
+from knowledge.recipes.codebase_analysis.context_loader import (
     CodebaseContext,
     load_codebase_context,
     load_source_for_namespace,

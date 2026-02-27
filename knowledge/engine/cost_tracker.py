@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
 
-from engine.config import GuardrailsConfig
+from knowledge.engine.config import GuardrailsConfig
 
 
 class GuardrailStatus(Enum):
@@ -17,9 +17,9 @@ class GuardrailStatus(Enum):
 
 # Pricing per million tokens (approximate, for estimation only).
 MODEL_PRICING: dict[str, dict[str, Decimal]] = {
-    "claude-opus-4-6": {"input": Decimal("15.00"), "output": Decimal("75.00")},
-    "claude-sonnet-4-6": {"input": Decimal("3.00"), "output": Decimal("15.00")},
-    "claude-haiku-4-5-20251001": {"input": Decimal("1.00"), "output": Decimal("5.00")},
+    "anthropic/claude-opus-4-6": {"input": Decimal("15.00"), "output": Decimal("75.00")},
+    "anthropic/claude-sonnet-4-6": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+    "anthropic/claude-haiku-4-5-20251001": {"input": Decimal("1.00"), "output": Decimal("5.00")},
 }
 
 # Safe default for unknown models — use Opus pricing (most expensive = conservative).

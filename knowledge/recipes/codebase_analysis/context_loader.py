@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from engine.backends.base import LanguageBackend, StructureResult
+from knowledge.backends.base import LanguageBackend, StructureResult
 
 
 @dataclass(frozen=True)

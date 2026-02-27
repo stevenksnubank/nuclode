@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from engine.backends.base import NamespaceInfo, StructureResult
-from engine.backends.clojure_nrepl import (
+from knowledge.backends.base import NamespaceInfo, StructureResult
+from knowledge.backends.clojure_nrepl import (
     ClojureNREPLBackend,
     _detect_nrepl_port,
     _extract_functions,

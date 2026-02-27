@@ -2,6 +2,9 @@
 
 Ties together context loading, staleness detection, engine invocation,
 and output verification. This is the entry point for running a codebase analysis.
+
+All artifacts (beads database, metadata) are written to output_dir — the target
+project directory is treated as read-only.
 """
 
 from __future__ import annotations
@@ -13,16 +16,17 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from engine.backends.base import LanguageBackend
-from engine.config import EngineConfig, load_config
-from engine.runner import EngineResult, EngineRunner
-from recipes.codebase_analysis.beads_tools import get_custom_tools
-from recipes.codebase_analysis.context_loader import load_codebase_context
-from recipes.codebase_analysis.prompts import build_analysis_prompt
+from knowledge.backends.base import LanguageBackend
+from knowledge.engine.config import EngineConfig, load_config
+from knowledge.engine.runner import EngineResult, EngineRunner
+from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools
+from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context
+from knowledge.recipes.codebase_analysis.prompts import build_analysis_prompt
 
 logger = logging.getLogger(__name__)
 
-_METADATA_FILE = ".beads/analysis_metadata.json"
+# Default output directory: nuclode/.beads/
+_DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / ".beads"
 
 
 class StalenessStatus(Enum):
@@ -75,6 +79,8 @@ class CodebaseAnalyzer:
 
     Handles: staleness detection, context loading, engine invocation,
     metadata storage, and graph verification.
+
+    The target project_dir is read-only — all artifacts are written to output_dir.
     """
 
     def __init__(
@@ -82,10 +88,22 @@ class CodebaseAnalyzer:
         project_dir: Path,
         backend: LanguageBackend,
         config: EngineConfig | None = None,
+        output_dir: Path | None = None,
     ) -> None:
         self._project_dir = Path(project_dir).resolve()
         self._backend = backend
         self._config = config or load_config()
+        self._output_dir = Path(output_dir) if output_dir else _DEFAULT_OUTPUT_DIR
+
+    @property
+    def _db_path(self) -> Path:
+        """Path to the shared beads database."""
+        return self._output_dir / "beads.db"
+
+    @property
+    def _metadata_path(self) -> Path:
+        """Path to per-project analysis metadata."""
+        return self._output_dir / "projects" / self._project_dir.name / "analysis_metadata.json"
 
     def check_staleness(self) -> StalenessResult:
         """Check whether the existing analysis is stale.
@@ -96,11 +114,8 @@ class CodebaseAnalyzer:
         Returns:
             StalenessResult with status and change details.
         """
-        metadata_path = self._project_dir / _METADATA_FILE
-
-        # Check if beads directory exists
-        beads_dir = self._project_dir / ".beads"
-        if not beads_dir.exists():
+        # Check if output directory exists (replaces checking project_dir/.beads)
+        if not self._output_dir.exists():
             return StalenessResult(
                 status=StalenessStatus.NO_BEADS,
                 last_sha=None,
@@ -110,7 +125,7 @@ class CodebaseAnalyzer:
             )
 
         # Check for prior analysis metadata
-        if not metadata_path.exists():
+        if not self._metadata_path.exists():
             return StalenessResult(
                 status=StalenessStatus.NO_PRIOR_ANALYSIS,
                 last_sha=None,
@@ -121,7 +136,7 @@ class CodebaseAnalyzer:
 
         # Load last analysis SHA
         try:
-            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            metadata = json.loads(self._metadata_path.read_text(encoding="utf-8"))
             last_sha = metadata.get("commit_sha")
         except (json.JSONDecodeError, OSError) as exc:
             logger.warning("Failed to read analysis metadata: %s", exc)
@@ -153,7 +168,7 @@ class CodebaseAnalyzer:
                 changed_namespaces=[],
             )
 
-        # Get changed files
+        # Get changed files (reads from target project — read-only)
         changed_files = _get_changed_files(self._project_dir, last_sha, current_sha)
 
         # Map to namespaces using the backend
@@ -185,7 +200,9 @@ class CodebaseAnalyzer:
         Returns:
             AnalysisResult with status and details.
         """
+        logger.info("Checking staleness for %s", self._project_dir.name)
         staleness = self.check_staleness()
+        logger.info("Staleness: %s", staleness.status.value)
 
         # Skip if fresh (unless forced)
         if not force and staleness.status == StalenessStatus.FRESH:
@@ -198,7 +215,8 @@ class CodebaseAnalyzer:
                 commit_sha=staleness.current_sha,
             )
 
-        # Load context
+        # Load context (reads from target project — read-only)
+        logger.info("Loading codebase context from %s", self._project_dir)
         try:
             context = load_codebase_context(self._project_dir, self._backend)
         except (FileNotFoundError, ValueError) as exc:
@@ -211,21 +229,34 @@ class CodebaseAnalyzer:
                 commit_sha=None,
             )
 
+        logger.info(
+            "Context loaded: %d namespaces, project=%s",
+            len(context.structure.namespaces),
+            context.project_name,
+        )
+
         # Build prompt
+        logger.info("Building analysis prompt (mode=%s)", mode)
         prompt = build_analysis_prompt(
             project_name=context.project_name,
             structure_summary=context.structure_summary,
             mode=mode,
         )
 
-        # Get beads tools
+        # Get beads tools (writes to output_dir via db_path)
         try:
-            custom_tools = get_custom_tools(self._project_dir)
+            custom_tools = get_custom_tools(self._db_path)
         except (TypeError, ValueError):
             logger.warning("Beads tools unavailable, running without them")
             custom_tools = {}
 
         # Run engine
+        logger.info(
+            "Starting engine: root=%s, sub_high=%s, sub_low=%s",
+            self._config.root_model,
+            self._config.sub_lm_high_model,
+            self._config.sub_lm_low_model,
+        )
         runner = EngineRunner(self._config)
         engine_result = runner.run(
             context=context.structure_summary,
@@ -234,7 +265,9 @@ class CodebaseAnalyzer:
             structure_summary=context.structure_summary,
         )
 
-        # Store metadata on success
+        logger.info("Engine finished: status=%s, iterations=%d", engine_result.status, engine_result.iterations)
+
+        # Store metadata on success (writes to output_dir)
         commit_sha = staleness.current_sha
         if engine_result.status == "completed" and commit_sha:
             self.store_analysis_metadata(commit_sha)
@@ -283,7 +316,7 @@ class CodebaseAnalyzer:
         )
 
         try:
-            custom_tools = get_custom_tools(self._project_dir)
+            custom_tools = get_custom_tools(self._db_path)
         except (TypeError, ValueError):
             custom_tools = {}
 
@@ -311,16 +344,16 @@ class CodebaseAnalyzer:
         """Verify the beads graph has structure beads.
 
         Checks that bd query --tag structure returns results.
+        Uses --db flag to point at the output_dir database.
 
         Returns:
             True if structure beads exist.
         """
         try:
             result = subprocess.run(
-                ["bd", "query", "--filter", "tag:structure"],
+                ["bd", "--db", str(self._db_path), "query", "--filter", "tag:structure"],
                 capture_output=True,
                 text=True,
-                cwd=str(self._project_dir),
                 timeout=10,
             )
             return result.returncode == 0 and bool(result.stdout.strip())
@@ -330,18 +363,19 @@ class CodebaseAnalyzer:
     def store_analysis_metadata(self, commit_sha: str) -> None:
         """Store the commit SHA and analysis metadata for staleness detection.
 
+        Writes to output_dir/projects/<project_name>/analysis_metadata.json.
+
         Args:
             commit_sha: The git SHA to record.
         """
-        metadata_path = self._project_dir / _METADATA_FILE
-        metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        self._metadata_path.parent.mkdir(parents=True, exist_ok=True)
 
         metadata = {
             "commit_sha": commit_sha,
             "backend": self._backend.name,
         }
 
-        metadata_path.write_text(
+        self._metadata_path.write_text(
             json.dumps(metadata, indent=2),
             encoding="utf-8",
         )

@@ -2,13 +2,15 @@
 
 ## Overview
 
-nuclode uses a layered architecture to separate generic workspace configuration from company/team-specific extensions. The `setup.sh` script merges selected layers into `~/.claude`.
+nuclode uses a modular architecture with a core workspace and an optional knowledge layer for AI-powered codebase analysis. Customization is handled through plugins from the [ai-agents-plugins marketplace](https://github.com/nubank/ai-agents-plugins), rather than local layer directories.
+
+The `setup.sh` script installs the workspace into `~/.claude` and configures any selected marketplace plugins.
 
 ## Directory Structure
 
 ```
 nuclode/
-├── core/                     # Generic workspace (always installed)
+├── workspace/                # Core workspace (always installed → ~/.claude/)
 │   ├── CLAUDE.md             # Coding standards, agent descriptions
 │   ├── AGENTS.md             # Beads workflow instructions
 │   ├── settings.json         # Base settings (model selection)
@@ -22,42 +24,43 @@ nuclode/
 │   │   └── test-writer/
 │   ├── commands/agents/      # Slash command definitions
 │   └── beads/                # Beads templates and instructions
-├── layers/                   # Company/team-specific extensions
-│   └── nubank/
-│       ├── CLAUDE.md         # Nubank-specific standards
-│       ├── settings.json     # Plugins (superpowers, glean)
-│       ├── .mcp.json         # Additional MCP servers (clojure)
-│       └── agents/           # Agent overrides
+├── knowledge/                # AI-powered codebase analysis
+│   ├── engine/               # RLM-inspired analysis engine
+│   │   ├── config.py         # Engine configuration
+│   │   ├── runner.py         # Orchestration runner
+│   │   └── cost_tracker.py   # Token/cost tracking
+│   └── recipes/              # Analysis recipes
+│       └── codebase_analysis/ # First recipe: codebase analysis
 ├── templates/                # Per-project templates
 ├── shell/                    # Shell functions (worktrees)
 ├── setup.sh                  # Interactive installer
 └── docs/                     # Documentation
 ```
 
-## How Merging Works
+## How Setup Works
 
 When `setup.sh` runs, it:
 
-### 1. Installs Core
-Copies all `core/` files into `~/.claude/` as the base configuration.
+### 1. Installs Workspace
+Copies all `workspace/` files into `~/.claude/` as the base configuration.
 
-### 2. Applies Layers (in order)
+### 2. Applies Marketplace Plugins
 
-For each selected layer:
+Plugins from the [ai-agents-plugins marketplace](https://github.com/nubank/ai-agents-plugins) extend the workspace with company or team-specific configuration. Each plugin can provide:
 
 **CLAUDE.md** - Appended to the end of `~/.claude/CLAUDE.md` with a `---` separator:
 ```
-[core CLAUDE.md content]
+[workspace CLAUDE.md content]
 ---
-[layer CLAUDE.md content]
+[plugin CLAUDE.md content]
 ```
 
 **settings.json** - Deep-merged using Python:
 ```json
-// core
+// workspace
 {"model": "opus"}
 
-// + layer
+// + plugin
 {"enabledPlugins": {"superpowers@marketplace": true}}
 
 // = result
@@ -66,14 +69,14 @@ For each selected layer:
 
 **.mcp.json** - MCP servers are combined:
 ```json
-// core: sequential-thinking
-// + layer: clojure
+// workspace: sequential-thinking
+// + plugin: clojure
 // = both servers available
 ```
 
 **Agent Overrides** - `*-overrides.json` files extend agent configurations:
 ```json
-// layers/nubank/agents/code-planner-overrides.json
+// plugin agents/code-planner-overrides.json
 {
   "additional_tools": ["mcp__clojure__read_file"],
   "additional_mcp_servers": ["clojure"],
@@ -87,10 +90,20 @@ After merging, user-specific files are restored from backup:
 - `settings.local.json` - Personal settings overrides
 - `memory/` - Agent memory (persistent across sessions)
 
+## Knowledge Layer
+
+The `knowledge/` directory contains an RLM-inspired engine for AI-powered codebase analysis. It is separate from the workspace and is not installed into `~/.claude/`.
+
+- **`knowledge/engine/`** - The general-purpose analysis engine with configurable LM routing, cost tracking, and a decision gate for managing large-context analysis.
+- **`knowledge/recipes/`** - Specific analysis recipes that consume the engine. The first recipe is `codebase_analysis/`, which performs structured analysis of codebases.
+
+The knowledge layer is installed as a Python package (via `pyproject.toml`) and can be invoked independently of the workspace.
+
 ## Design Principles
 
-1. **Core is generic** - No company-specific references in `core/`
-2. **Layers are additive** - Layers extend, never replace core
+1. **Workspace is generic** - No company-specific references in `workspace/`
+2. **Plugins are additive** - Marketplace plugins extend, never replace the workspace
 3. **User files are sacred** - Memory and local settings always preserved
 4. **Beads is per-project** - Not global, keeps context focused
 5. **Setup is idempotent** - Safe to re-run anytime
+6. **Knowledge is independent** - Analysis engine runs separately from workspace config

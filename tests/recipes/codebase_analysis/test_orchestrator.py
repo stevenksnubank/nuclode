@@ -15,11 +15,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from engine.backends.clojure_nrepl import ClojureNREPLBackend
-from engine.config import EngineConfig, GuardrailsConfig
-from engine.gate import GateDecision
-from engine.runner import EngineResult, EngineRunner
-from recipes.codebase_analysis.orchestrator import (
+from knowledge.backends.clojure_nrepl import ClojureNREPLBackend
+from knowledge.engine.config import EngineConfig, GuardrailsConfig
+from knowledge.engine.gate import GateDecision
+from knowledge.engine.runner import EngineResult, EngineRunner
+from knowledge.recipes.codebase_analysis.orchestrator import (
     AnalysisResult,
     CodebaseAnalyzer,
     StalenessResult,
@@ -38,11 +38,11 @@ from recipes.codebase_analysis.orchestrator import (
 @pytest.fixture
 def config() -> EngineConfig:
     return EngineConfig(
-        root_model="claude-opus-4-6",
+        root_model="anthropic/claude-opus-4-6",
         root_extended_thinking=False,
         root_max_iterations=5,
-        sub_lm_high_model="claude-sonnet-4-6",
-        sub_lm_low_model="claude-haiku-4-5-20251001",
+        sub_lm_high_model="anthropic/claude-sonnet-4-6",
+        sub_lm_low_model="anthropic/claude-haiku-4-5-20251001",
         threshold_tokens=50000,
         guardrails=GuardrailsConfig(
             enabled=True,
@@ -60,7 +60,7 @@ def backend() -> ClojureNREPLBackend:
 
 @pytest.fixture
 def mock_project(tmp_path: Path) -> Path:
-    """Create a mock Clojure project with beads directory."""
+    """Create a mock Clojure project with source files."""
     logic_dir = tmp_path / "src" / "nu" / "svc" / "logic"
     logic_dir.mkdir(parents=True)
     model_dir = tmp_path / "src" / "nu" / "svc" / "model"
@@ -81,27 +81,30 @@ def mock_project(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def mock_project_with_beads(mock_project: Path) -> Path:
-    """Mock project with .beads directory."""
-    beads_dir = mock_project / ".beads"
-    beads_dir.mkdir()
-    return mock_project
+def output_dir(tmp_path: Path) -> Path:
+    """Separate output directory for beads artifacts (NOT inside mock_project)."""
+    out = tmp_path / "nuclode_beads"
+    out.mkdir()
+    return out
 
 
 @pytest.fixture
-def mock_project_with_metadata(mock_project_with_beads: Path) -> Path:
-    """Mock project with analysis metadata."""
+def output_dir_with_metadata(output_dir: Path, mock_project: Path) -> Path:
+    """Output directory with existing analysis metadata."""
+    metadata_dir = output_dir / "projects" / mock_project.name
+    metadata_dir.mkdir(parents=True)
     metadata = {"commit_sha": "abc123", "backend": "clojure-nrepl"}
-    metadata_path = mock_project_with_beads / ".beads" / "analysis_metadata.json"
-    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
-    return mock_project_with_beads
+    (metadata_dir / "analysis_metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
+    return output_dir
 
 
 @pytest.fixture
 def analyzer(
-    mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+    mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig, output_dir: Path
 ) -> CodebaseAnalyzer:
-    return CodebaseAnalyzer(mock_project, backend, config)
+    return CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
 
 
 def _make_engine_result(status: str = "completed", **kwargs) -> EngineResult:
@@ -125,65 +128,81 @@ def _make_engine_result(status: str = "completed", **kwargs) -> EngineResult:
 
 class TestCheckStaleness:
 
-    def test_no_beads_dir(
-        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+    def test_no_output_dir(
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        tmp_path: Path,
     ) -> None:
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        nonexistent = tmp_path / "does_not_exist"
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=nonexistent)
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.NO_BEADS
 
     def test_no_metadata_file(
-        self, mock_project_with_beads: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
-        analyzer = CodebaseAnalyzer(mock_project_with_beads, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.NO_PRIOR_ANALYSIS
 
-    @patch("recipes.codebase_analysis.orchestrator._get_current_sha")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator._get_current_sha")
     def test_same_sha_is_fresh(
         self, mock_sha: MagicMock,
-        mock_project_with_metadata: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir_with_metadata: Path,
     ) -> None:
         mock_sha.return_value = "abc123"
-        analyzer = CodebaseAnalyzer(mock_project_with_metadata, backend, config)
+        analyzer = CodebaseAnalyzer(
+            mock_project, backend, config, output_dir=output_dir_with_metadata
+        )
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.FRESH
         assert result.last_sha == "abc123"
         assert result.current_sha == "abc123"
 
-    @patch("recipes.codebase_analysis.orchestrator._get_changed_files")
-    @patch("recipes.codebase_analysis.orchestrator._get_current_sha")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator._get_changed_files")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator._get_current_sha")
     def test_different_sha_no_source_changes_is_fresh(
         self, mock_sha: MagicMock, mock_changed: MagicMock,
-        mock_project_with_metadata: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir_with_metadata: Path,
     ) -> None:
         mock_sha.return_value = "def456"
         mock_changed.return_value = ["README.md", "docs/notes.txt"]  # no .clj files
-        analyzer = CodebaseAnalyzer(mock_project_with_metadata, backend, config)
+        analyzer = CodebaseAnalyzer(
+            mock_project, backend, config, output_dir=output_dir_with_metadata
+        )
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.FRESH
         assert result.changed_namespaces == []
 
-    @patch("recipes.codebase_analysis.orchestrator._get_changed_files")
-    @patch("recipes.codebase_analysis.orchestrator._get_current_sha")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator._get_changed_files")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator._get_current_sha")
     def test_different_sha_with_source_changes_is_stale(
         self, mock_sha: MagicMock, mock_changed: MagicMock,
-        mock_project_with_metadata: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir_with_metadata: Path,
     ) -> None:
         mock_sha.return_value = "def456"
         # Return a path that matches a namespace in the project
         mock_changed.return_value = ["src/nu/svc/logic/core.clj"]
-        analyzer = CodebaseAnalyzer(mock_project_with_metadata, backend, config)
+        analyzer = CodebaseAnalyzer(
+            mock_project, backend, config, output_dir=output_dir_with_metadata
+        )
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.STALE
         assert len(result.changed_namespaces) > 0
 
     def test_corrupted_metadata_treated_as_no_prior(
-        self, mock_project_with_beads: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
-        metadata_path = mock_project_with_beads / ".beads" / "analysis_metadata.json"
-        metadata_path.write_text("not valid json", encoding="utf-8")
-        analyzer = CodebaseAnalyzer(mock_project_with_beads, backend, config)
+        metadata_dir = output_dir / "projects" / mock_project.name
+        metadata_dir.mkdir(parents=True)
+        (metadata_dir / "analysis_metadata.json").write_text(
+            "not valid json", encoding="utf-8"
+        )
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         result = analyzer.check_staleness()
         assert result.status == StalenessStatus.NO_PRIOR_ANALYSIS
 
@@ -289,13 +308,16 @@ class TestRun:
 
 class TestStoreAnalysisMetadata:
 
-    def test_creates_metadata_file(
-        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+    def test_creates_metadata_in_output_dir(
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         analyzer.store_analysis_metadata("sha-123")
 
-        metadata_path = mock_project / ".beads" / "analysis_metadata.json"
+        metadata_path = (
+            output_dir / "projects" / mock_project.name / "analysis_metadata.json"
+        )
         assert metadata_path.exists()
 
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -303,23 +325,50 @@ class TestStoreAnalysisMetadata:
         assert metadata["backend"] == "clojure-nrepl"
 
     def test_overwrites_existing_metadata(
-        self, mock_project_with_metadata: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir_with_metadata: Path,
     ) -> None:
-        analyzer = CodebaseAnalyzer(mock_project_with_metadata, backend, config)
+        analyzer = CodebaseAnalyzer(
+            mock_project, backend, config, output_dir=output_dir_with_metadata
+        )
         analyzer.store_analysis_metadata("new-sha")
 
-        metadata_path = mock_project_with_metadata / ".beads" / "analysis_metadata.json"
+        metadata_path = (
+            output_dir_with_metadata / "projects" / mock_project.name / "analysis_metadata.json"
+        )
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         assert metadata["commit_sha"] == "new-sha"
 
-    def test_creates_beads_dir_if_missing(
-        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+    def test_creates_project_dir_if_missing(
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         analyzer.store_analysis_metadata("sha-456")
 
-        beads_dir = mock_project / ".beads"
-        assert beads_dir.exists()
+        project_out = output_dir / "projects" / mock_project.name
+        assert project_out.exists()
+
+
+# ---------------------------------------------------------------------------
+# Target project is not modified
+# ---------------------------------------------------------------------------
+
+
+class TestTargetProjectNotModified:
+
+    def test_store_metadata_does_not_write_to_project_dir(
+        self, mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
+    ) -> None:
+        """The target project directory must remain untouched — no .beads/ created."""
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
+        analyzer.store_analysis_metadata("sha-789")
+
+        beads_in_project = mock_project / ".beads"
+        assert not beads_in_project.exists(), (
+            f".beads/ directory should NOT be created in the target project: {beads_in_project}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -329,42 +378,50 @@ class TestStoreAnalysisMetadata:
 
 class TestVerifyGraph:
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_true_when_beads_exist(
         self, mock_run: MagicMock,
-        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
         mock_run.return_value = MagicMock(
             returncode=0, stdout="bead-1\nbead-2\n"
         )
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         assert analyzer.verify_graph() is True
+        # Verify --db flag is used instead of cwd
+        args = mock_run.call_args[0][0]
+        assert "--db" in args
+        assert "cwd" not in mock_run.call_args[1]
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_false_when_no_beads(
         self, mock_run: MagicMock,
-        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
         mock_run.return_value = MagicMock(returncode=0, stdout="")
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         assert analyzer.verify_graph() is False
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_false_on_bd_failure(
         self, mock_run: MagicMock,
-        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
         mock_run.return_value = MagicMock(returncode=1, stdout="")
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         assert analyzer.verify_graph() is False
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_false_on_timeout(
         self, mock_run: MagicMock,
-        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig
+        mock_project: Path, backend: ClojureNREPLBackend, config: EngineConfig,
+        output_dir: Path,
     ) -> None:
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="bd", timeout=10)
-        analyzer = CodebaseAnalyzer(mock_project, backend, config)
+        analyzer = CodebaseAnalyzer(mock_project, backend, config, output_dir=output_dir)
         assert analyzer.verify_graph() is False
 
 
@@ -375,12 +432,12 @@ class TestVerifyGraph:
 
 class TestGetCurrentSha:
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_sha(self, mock_run: MagicMock, tmp_path: Path) -> None:
         mock_run.return_value = MagicMock(returncode=0, stdout="abc123\n")
         assert _get_current_sha(tmp_path) == "abc123"
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_none_on_failure(self, mock_run: MagicMock, tmp_path: Path) -> None:
         mock_run.return_value = MagicMock(returncode=1, stdout="")
         assert _get_current_sha(tmp_path) is None
@@ -388,7 +445,7 @@ class TestGetCurrentSha:
 
 class TestGetChangedFiles:
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_changed_files(self, mock_run: MagicMock, tmp_path: Path) -> None:
         mock_run.return_value = MagicMock(
             returncode=0, stdout="src/core.clj\nsrc/model.clj\n"
@@ -396,7 +453,7 @@ class TestGetChangedFiles:
         result = _get_changed_files(tmp_path, "abc", "def")
         assert result == ["src/core.clj", "src/model.clj"]
 
-    @patch("recipes.codebase_analysis.orchestrator.subprocess.run")
+    @patch("knowledge.recipes.codebase_analysis.orchestrator.subprocess.run")
     def test_returns_empty_on_failure(self, mock_run: MagicMock, tmp_path: Path) -> None:
         mock_run.return_value = MagicMock(returncode=1, stdout="")
         assert _get_changed_files(tmp_path, "abc", "def") == []

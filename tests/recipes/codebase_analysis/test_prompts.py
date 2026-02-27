@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from recipes.codebase_analysis.prompts import (
+from knowledge.recipes.codebase_analysis.prompts import (
     LAYER_PROMPTS,
     build_analysis_prompt,
     get_layer_prompt,

@@ -10,7 +10,7 @@ import logging
 import re
 from pathlib import Path
 
-from engine.backends.base import LanguageBackend, NamespaceInfo, StructureResult
+from knowledge.backends.base import LanguageBackend, NamespaceInfo, StructureResult
 
 logger = logging.getLogger(__name__)
 

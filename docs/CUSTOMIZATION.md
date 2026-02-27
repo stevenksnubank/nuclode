@@ -1,16 +1,50 @@
 # Customization Guide
 
-## Creating a New Layer
+## Overview
 
-Layers extend the core workspace with company or team-specific configuration.
+nuclode is designed as a core framework that you extend with plugins from the [ai-agents-plugins marketplace](https://github.com/nubank/ai-agents-plugins). The customization story is:
 
-### Step 1: Create Layer Directory
+1. **Install nuclode** for the core workspace framework
+2. **Extend with plugins** from the marketplace
+3. **Create your own plugins** to share with your team or company
+
+## Using Marketplace Plugins
+
+### Browse Available Plugins
+
+Visit the [ai-agents-plugins marketplace](https://github.com/nubank/ai-agents-plugins) to see available plugins. Each plugin can provide:
+
+- **CLAUDE.md** - Company/team-specific coding standards
+- **settings.json** - Plugin enablement and configuration
+- **.mcp.json** - Additional MCP servers
+- **Agent overrides** - Extended agent capabilities
+
+### Install a Plugin
 
 ```bash
-mkdir -p layers/mycompany
+./setup.sh --plugin <plugin-name>
 ```
 
-### Step 2: Add CLAUDE.md (Optional)
+The installer deep-merges plugin configuration into your workspace, combining settings, MCP servers, and agent capabilities additively.
+
+## Creating Your Own Plugin
+
+For the full guide on creating and publishing plugins, see the [Contributing Guide](https://github.com/nubank/ai-agents-plugins/blob/main/CONTRIBUTING.md).
+
+### Plugin Structure
+
+A plugin follows this structure:
+
+```
+my-plugin/
+├── CLAUDE.md           # Additional coding standards (appended to workspace)
+├── settings.json       # Plugin settings (deep-merged)
+├── .mcp.json           # Additional MCP servers (combined)
+└── agents/             # Agent overrides
+    └── code-planner-overrides.json
+```
+
+### Example: CLAUDE.md
 
 Company-specific coding standards, tool references, or workflow instructions:
 
@@ -26,7 +60,7 @@ Company-specific coding standards, tool references, or workflow instructions:
 - Use MyCompany logging library
 ```
 
-### Step 3: Add settings.json (Optional)
+### Example: settings.json
 
 Enable company-specific plugins:
 
@@ -38,7 +72,7 @@ Enable company-specific plugins:
 }
 ```
 
-### Step 4: Add .mcp.json (Optional)
+### Example: .mcp.json
 
 Add company-specific MCP servers:
 
@@ -53,15 +87,10 @@ Add company-specific MCP servers:
 }
 ```
 
-### Step 5: Add Agent Overrides (Optional)
+### Example: Agent Overrides
 
-Extend agent capabilities with company tools:
+Extend agent capabilities with company tools by creating `<agent-name>-overrides.json`:
 
-```bash
-mkdir -p layers/mycompany/agents
-```
-
-Create `code-planner-overrides.json`:
 ```json
 {
   "additional_tools": [
@@ -73,18 +102,12 @@ Create `code-planner-overrides.json`:
 }
 ```
 
-### Step 6: Install
-
-```bash
-./setup.sh --layer mycompany
-```
-
 ## Adding a New Agent
 
 ### Step 1: Create Agent Directory
 
 ```bash
-mkdir -p core/agents/my-agent
+mkdir -p workspace/agents/my-agent
 ```
 
 ### Step 2: Write agent.json
@@ -93,7 +116,7 @@ mkdir -p core/agents/my-agent
 {
   "name": "my-agent",
   "description": "What this agent does",
-  "model": "claude-sonnet-4-5-20250929",
+  "model": "claude-sonnet-4-6",
   "extended_thinking": false,
   "capabilities": ["my_capability"],
   "tools": ["Read", "Grep", "Glob"],
@@ -121,12 +144,12 @@ You are [role description].
 
 ### Step 4: Create Slash Command
 
-Create `core/commands/agents/my-agent.md`:
+Create `workspace/commands/agents/my-agent.md`:
 
 ```markdown
 ---
 description: What this agent does
-model: claude-sonnet-4-5-20250929
+model: claude-sonnet-4-6
 allowed-tools: Read, Grep, Glob
 argument-hint: [what to provide]
 ---
@@ -144,21 +167,21 @@ $ARGUMENTS
 
 ### Global Changes
 
-Edit `core/CLAUDE.md` to modify standards that apply everywhere.
+Edit `workspace/CLAUDE.md` to modify standards that apply everywhere.
 
-### Layer-Specific Standards
+### Plugin-Specific Standards
 
-Add standards to `layers/mycompany/CLAUDE.md` - they'll be appended to the global standards.
+Add standards to your plugin's `CLAUDE.md` -- they'll be appended to the global standards when the plugin is installed.
 
 ### Project-Specific Standards
 
-Create a `CLAUDE.md` in the project root - it's loaded alongside global and layer standards.
+Create a `CLAUDE.md` in the project root -- it's loaded alongside global and plugin standards.
 
 ## Model Configuration
 
 ### Default Model
 
-Set in `core/settings.json`:
+Set in `workspace/settings.json`:
 ```json
 {"model": "opus"}
 ```

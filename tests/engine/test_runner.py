@@ -10,19 +10,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from engine.config import EngineConfig, GuardrailsConfig
-from engine.gate import GateDecision
-from engine.runner import EngineRunner, _strip_code_fences
+from knowledge.engine.config import EngineConfig, GuardrailsConfig
+from knowledge.engine.gate import GateDecision
+from knowledge.engine.runner import EngineRunner, _strip_code_fences
 
 
 @pytest.fixture
 def config() -> EngineConfig:
     return EngineConfig(
-        root_model="claude-opus-4-6",
+        root_model="anthropic/claude-opus-4-6",
         root_extended_thinking=False,  # disabled for simpler test mocking
         root_max_iterations=5,
-        sub_lm_high_model="claude-sonnet-4-6",
-        sub_lm_low_model="claude-haiku-4-5-20251001",
+        sub_lm_high_model="anthropic/claude-sonnet-4-6",
+        sub_lm_low_model="anthropic/claude-haiku-4-5-20251001",
         threshold_tokens=50000,
         guardrails=GuardrailsConfig(
             enabled=True,
@@ -58,6 +58,18 @@ class TestStripCodeFences:
     def test_multiline_code(self) -> None:
         code = "```python\nx = 1\ny = 2\nprint(x + y)\n```"
         assert _strip_code_fences(code) == "x = 1\ny = 2\nprint(x + y)"
+
+    def test_text_before_code_block(self) -> None:
+        code = "Here's my analysis:\n\n```python\nprint('hello')\n```"
+        assert _strip_code_fences(code) == "print('hello')"
+
+    def test_text_before_and_after_code_block(self) -> None:
+        code = "I'll analyze this.\n\n```python\nx = 1\nprint(x)\n```\n\nThat should work."
+        assert _strip_code_fences(code) == "x = 1\nprint(x)"
+
+    def test_multiple_code_blocks_joined(self) -> None:
+        code = "Step 1:\n```python\nx = 1\n```\nStep 2:\n```python\nprint(x)\n```"
+        assert _strip_code_fences(code) == "x = 1\n\nprint(x)"
 
 
 class TestRunDirect:
@@ -177,7 +189,7 @@ class TestBudgetGuardrails:
     def test_budget_exceeded_stops_loop(self, mock_lm: MagicMock, config: EngineConfig) -> None:
         runner = EngineRunner(config)
         # Simulate expensive calls by pre-loading the cost tracker
-        runner._cost_tracker.record("claude-opus-4-6", input_tokens=1_000_000, output_tokens=0)
+        runner._cost_tracker.record("anthropic/claude-opus-4-6", input_tokens=1_000_000, output_tokens=0)
         # Now cost is ~$15, exceeds max of $10
 
         mock_lm.return_value = 'print("should not run")'
