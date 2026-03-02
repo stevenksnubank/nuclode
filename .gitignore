@@ -29,6 +29,7 @@ plugins/
 *.pem
 .env
 .env.*
+!.env.example
 
 # Worktrees
 .worktrees/
