@@ -37,3 +37,7 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+
+## Core Development Loop
+
+All agents participate in a shared development process defined in `WORKFLOW.md`. Read it to understand your phase, your artifacts, and when to hand off to the next agent.

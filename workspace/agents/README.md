@@ -50,56 +50,50 @@ This directory contains your global AI agents for specialized development tasks.
 - Uses Sonnet 4.5 for fast test generation
 - Can write test files directly
 
-## Workflows
+## Development Loop
 
-### Two-Stage Development Workflow
+All non-trivial changes follow the core loop defined in `WORKFLOW.md`:
 
 ```
-code-planner (Opus 4.6 + Thinking)    →    code-implementer (Sonnet)
-         ↓                                      ↓
-   Detailed Plan                         Working Code
-         ↓                                      ↓
-   User Approval                         Tests Pass
+Research  →  Plan  →  Annotate  →  Implement  →  Review
+(planner)   (planner)  (human+     (implementer)  (reviewer,
+                        planner)                    defender,
+                                                    test-writer)
 ```
 
-1. **Planning Phase** (Opus + Extended Thinking):
-   - Invoke code-planner with requirements
-   - Agent analyzes requirements and codebase
-   - Agent produces detailed, actionable plan
-   - User reviews and approves plan
+### Phases
 
-2. **Implementation Phase** (Sonnet):
-   - Pass approved plan to code-implementer
-   - Agent executes plan step-by-step
-   - Agent writes code following standards
-   - Agent tests and formats code
+| Phase | Agent | What Happens |
+|-------|-------|--------------|
+| 1. Research | code-planner | Deep-read code, map dependencies, surface unknowns |
+| 2. Plan | code-planner | Design solution, produce implementation plan |
+| 3. Annotate | human + code-planner | Human reviews plan, provides feedback (1-6 rounds) |
+| 4. Implement | code-implementer | Execute approved plan step-by-step |
+| 5. Review | code-reviewer + others | Verify implementation against plan |
 
 ### Example: Full Development Cycle
 
 ```bash
-# Step 1: Plan
+# Phase 1-2: Research and plan
 /agents:code-planner Add user authentication to the API
 
-# Step 2: Review plan and approve
+# Phase 3: Review the plan, annotate with feedback
+# (repeat until approved)
 
-# Step 3: Implement
+# Phase 4: Implement the approved plan
 /agents:code-implementer [paste approved plan]
 
-# Step 4: Code review
+# Phase 5: Review
 /agents:code-reviewer Review the authentication implementation
-
-# Step 5: Security testing
 /agents:active-defender Test auth for bypass vulnerabilities
-
-# Step 6: Generate additional tests
 /agents:test-writer Add edge case tests for auth
 ```
 
-### Quick Fix Workflow
+### Quick Fix (Minimal Loop)
 
 ```bash
 /agents:code-planner Fix the missing import in main.py
-# Approve plan
+# Approve inline plan (1 round)
 /agents:code-implementer [paste plan]
 /agents:code-reviewer Quick review of the fix
 ```
@@ -108,8 +102,8 @@ code-planner (Opus 4.6 + Thinking)    →    code-implementer (Sonnet)
 
 ```bash
 /agents:code-planner Add CSRF protection
-/agents:code-reviewer Review plan for security
-/agents:active-defender Test design for bypasses
+# Deep annotation cycle (2-3 rounds)
+/agents:active-defender Test design for bypasses before approval
 # Approve plan
 /agents:code-implementer [paste plan]
 /agents:active-defender Test implementation

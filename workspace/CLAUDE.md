@@ -14,13 +14,18 @@ You have 5 specialized agents available via slash commands:
 | **Active Defender** | `/agents:active-defender` | Opus 4.6 + Thinking | Offensive security testing |
 | **Test Writer** | `/agents:test-writer` | Sonnet 4.5 | Generate comprehensive tests |
 
-### Workflow
-1. **Plan** with `/agents:code-planner` (Opus + Thinking)
-2. **Review plan** and approve
-3. **Implement** with `/agents:code-implementer` (Sonnet)
-4. **Review code** with `/agents:code-reviewer` (Opus + Thinking)
-5. **Security test** with `/agents:active-defender` (Opus + Thinking)
-6. **Generate tests** with `/agents:test-writer` (Sonnet)
+### Development Loop
+
+All non-trivial changes follow the core loop defined in `WORKFLOW.md`:
+
+```
+Research → Plan → Annotate → Implement → Review
+```
+
+1. **Research + Plan** with `/agents:code-planner` — understand the problem, design the solution
+2. **Annotate** — review the plan, provide feedback (1-6 rounds)
+3. **Implement** with `/agents:code-implementer` — execute the approved plan
+4. **Review** with `/agents:code-reviewer`, `/agents:active-defender`, `/agents:test-writer`
 
 ---
 

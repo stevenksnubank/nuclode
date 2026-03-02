@@ -39,6 +39,8 @@ Installs all dependencies, configures your workspace, and adds the `nuclode` CLI
 nuclode analyze /path/to/project
 ```
 
+**Development loop** — Every non-trivial change follows a core loop: Research → Plan → Annotate → Implement → Review. The planner researches your codebase and designs a solution, you annotate and refine the plan collaboratively (1-6 rounds), the implementer executes the approved plan exactly, and reviewers verify the result. The loop scales with complexity — a one-file fix gets a single annotation round, a cross-cutting feature gets deep research and multiple cycles.
+
 **Agent layer** — Five specialized agents consume the knowledge graph and follow structured workflows. Each operates on the same stable understanding of your code.
 
 | Agent | Command | Role |
