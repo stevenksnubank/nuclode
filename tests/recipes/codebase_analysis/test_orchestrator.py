@@ -18,6 +18,7 @@ import pytest
 from knowledge.backends.clojure_nrepl import ClojureNREPLBackend
 from knowledge.engine.config import EngineConfig, GuardrailsConfig
 from knowledge.engine.gate import GateDecision
+from knowledge.engine.pipeline import PipelineResult, PipelineRunner
 from knowledge.engine.runner import EngineResult, EngineRunner
 from knowledge.recipes.codebase_analysis.orchestrator import (
     AnalysisResult,
@@ -119,6 +120,19 @@ def _make_engine_result(status: str = "completed", **kwargs) -> EngineResult:
     }
     defaults.update(kwargs)
     return EngineResult(status=status, **defaults)
+
+
+def _make_pipeline_result(status: str = "completed", **kwargs) -> PipelineResult:
+    """Helper to create mock PipelineResult."""
+    defaults = {
+        "analyses": [],
+        "validation_errors": [],
+        "cost_summary": {"total_cost_usd": "0.50"},
+        "groups_total": 1,
+        "groups_succeeded": 1,
+    }
+    defaults.update(kwargs)
+    return PipelineResult(status=status, **defaults)
 
 
 # ---------------------------------------------------------------------------
@@ -228,76 +242,76 @@ class TestRun:
         assert result.engine_result is None
 
     @patch.object(CodebaseAnalyzer, "check_staleness")
-    @patch.object(EngineRunner, "run")
+    @patch.object(PipelineRunner, "run")
     def test_force_overrides_fresh(
-        self, mock_engine: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
+        self, mock_pipeline: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
     ) -> None:
         mock_staleness.return_value = StalenessResult(
             status=StalenessStatus.FRESH,
             last_sha="abc", current_sha="abc",
             changed_files=[], changed_namespaces=[],
         )
-        mock_engine.return_value = _make_engine_result()
+        mock_pipeline.return_value = _make_pipeline_result()
         result = analyzer.run(force=True)
         assert result.status == "completed"
-        mock_engine.assert_called_once()
+        mock_pipeline.assert_called_once()
 
     @patch.object(CodebaseAnalyzer, "check_staleness")
-    @patch.object(EngineRunner, "run")
+    @patch.object(PipelineRunner, "run")
     def test_runs_on_no_prior_analysis(
-        self, mock_engine: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
+        self, mock_pipeline: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
     ) -> None:
         mock_staleness.return_value = StalenessResult(
             status=StalenessStatus.NO_PRIOR_ANALYSIS,
             last_sha=None, current_sha="abc",
             changed_files=[], changed_namespaces=[],
         )
-        mock_engine.return_value = _make_engine_result()
+        mock_pipeline.return_value = _make_pipeline_result()
         result = analyzer.run()
         assert result.status == "completed"
 
     @patch.object(CodebaseAnalyzer, "check_staleness")
-    @patch.object(EngineRunner, "run")
+    @patch.object(PipelineRunner, "run")
     def test_runs_on_stale(
-        self, mock_engine: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
+        self, mock_pipeline: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
     ) -> None:
         mock_staleness.return_value = StalenessResult(
             status=StalenessStatus.STALE,
             last_sha="abc", current_sha="def",
             changed_files=["src/core.clj"], changed_namespaces=["nu.svc.logic.core"],
         )
-        mock_engine.return_value = _make_engine_result()
+        mock_pipeline.return_value = _make_pipeline_result()
         result = analyzer.run()
         assert result.status == "completed"
 
     @patch.object(CodebaseAnalyzer, "check_staleness")
-    @patch.object(EngineRunner, "run")
+    @patch.object(PipelineRunner, "run")
     def test_captures_namespace_count(
-        self, mock_engine: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
+        self, mock_pipeline: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
     ) -> None:
         mock_staleness.return_value = StalenessResult(
             status=StalenessStatus.NO_PRIOR_ANALYSIS,
             last_sha=None, current_sha="abc",
             changed_files=[], changed_namespaces=[],
         )
-        mock_engine.return_value = _make_engine_result()
+        mock_pipeline.return_value = _make_pipeline_result()
         result = analyzer.run()
         assert result.namespace_count == 2  # mock_project has 2 namespaces
 
     @patch.object(CodebaseAnalyzer, "check_staleness")
-    @patch.object(EngineRunner, "run")
+    @patch.object(PipelineRunner, "run")
     def test_passes_mode_to_prompt(
-        self, mock_engine: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
+        self, mock_pipeline: MagicMock, mock_staleness: MagicMock, analyzer: CodebaseAnalyzer
     ) -> None:
         mock_staleness.return_value = StalenessResult(
             status=StalenessStatus.NO_BEADS,
             last_sha=None, current_sha="abc",
             changed_files=[], changed_namespaces=[],
         )
-        mock_engine.return_value = _make_engine_result()
+        mock_pipeline.return_value = _make_pipeline_result()
         result = analyzer.run(mode="security")
-        # Verify engine was called (prompt building with mode happens internally)
-        mock_engine.assert_called_once()
+        # Verify pipeline was called (prompt building with mode happens internally)
+        mock_pipeline.assert_called_once()
         assert result.status == "completed"
 
 
