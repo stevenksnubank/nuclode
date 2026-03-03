@@ -25,7 +25,7 @@ Install once. Every project gets the same team, the same analysis depth, the sam
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/nuclode.git ~/dev/nuclode
+git clone https://github.com/stevenksnubank/nuclode.git ~/dev/nuclode
 cd ~/dev/nuclode && ./nuclode install
 ```
 
@@ -126,7 +126,6 @@ These are added to your shell profile automatically during setup.
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Knowledge Engine](docs/KNOWLEDGE.md)
 - [Beads Workflow](docs/BEADS_WORKFLOW.md)
 - [Customization](docs/CUSTOMIZATION.md)
 

@@ -22,7 +22,7 @@ Visit the [ai-agents-plugins marketplace](https://github.com/nubank/ai-agents-pl
 ### Install a Plugin
 
 ```bash
-./setup.sh --plugin <plugin-name>
+nuclode install --plugin <plugin-name>
 ```
 
 The installer deep-merges plugin configuration into your workspace, combining settings, MCP servers, and agent capabilities additively.
