@@ -17,16 +17,20 @@ from enum import Enum
 from pathlib import Path
 
 from knowledge.backends.base import LanguageBackend
+from knowledge.engine.chunking import partition_flow_groups
 from knowledge.engine.config import EngineConfig, load_config
+from knowledge.engine.pipeline import PipelineResult, PipelineRunner
 from knowledge.engine.runner import EngineResult, EngineRunner
-from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools
-from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context
+from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools, reduce_to_beads
+from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context, load_source_map
 from knowledge.recipes.codebase_analysis.prompts import build_analysis_prompt
 
 logger = logging.getLogger(__name__)
 
-# Default output directory: nuclode/.beads/
-_DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / ".beads"
+# Default output directory: nuclode root / .nuclode-data/
+# Resolves from knowledge/recipes/codebase_analysis/ → 4 levels up to project root
+_NUCLODE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_DEFAULT_OUTPUT_DIR = _NUCLODE_ROOT / ".nuclode-data"
 
 
 class StalenessStatus(Enum):
@@ -61,7 +65,8 @@ class AnalysisResult:
 
     Attributes:
         status: "completed", "skipped_fresh", "budget_exceeded", "error".
-        engine_result: The raw engine result, if engine was invoked.
+        engine_result: The raw engine result, if engine was invoked (legacy REPL path).
+        pipeline_result: The pipeline result, if pipeline was used.
         staleness: The staleness check result.
         namespace_count: Number of namespaces analyzed.
         commit_sha: Git SHA stored as metadata after analysis.
@@ -72,6 +77,7 @@ class AnalysisResult:
     staleness: StalenessResult
     namespace_count: int
     commit_sha: str | None
+    pipeline_result: PipelineResult | None = None
 
 
 class CodebaseAnalyzer:
@@ -96,14 +102,39 @@ class CodebaseAnalyzer:
         self._output_dir = Path(output_dir) if output_dir else _DEFAULT_OUTPUT_DIR
 
     @property
+    def _project_output_dir(self) -> Path:
+        """Per-project output directory. Keeps each project's artifacts isolated."""
+        return self._output_dir / "projects" / self._project_dir.name
+
+    @property
     def _db_path(self) -> Path:
-        """Path to the shared beads database."""
-        return self._output_dir / "beads.db"
+        """Path to per-project beads database (bd init creates .beads/beads.db inside cwd)."""
+        return self._project_output_dir / ".beads" / "beads.db"
 
     @property
     def _metadata_path(self) -> Path:
         """Path to per-project analysis metadata."""
-        return self._output_dir / "projects" / self._project_dir.name / "analysis_metadata.json"
+        return self._project_output_dir / "analysis_metadata.json"
+
+    def _ensure_beads_db(self) -> None:
+        """Initialize beads database if it doesn't exist. Fails fast on errors."""
+        self._project_output_dir.mkdir(parents=True, exist_ok=True)
+        if self._db_path.exists():
+            return
+
+        prefix = self._project_dir.name
+        result = subprocess.run(
+            ["bd", "init", "--prefix", prefix, "--quiet"],
+            capture_output=True,
+            text=True,
+            cwd=str(self._project_output_dir),
+            timeout=10,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"bd init failed (exit {result.returncode}): {result.stderr.strip()}"
+            )
+        logger.info("Initialized beads db at %s (prefix: %s)", self._db_path, prefix)
 
     def check_staleness(self) -> StalenessResult:
         """Check whether the existing analysis is stale.
@@ -215,6 +246,19 @@ class CodebaseAnalyzer:
                 commit_sha=staleness.current_sha,
             )
 
+        # Initialize beads db before any expensive work
+        try:
+            self._ensure_beads_db()
+        except RuntimeError as exc:
+            logger.error("Failed to initialize beads database: %s", exc)
+            return AnalysisResult(
+                status="error",
+                engine_result=None,
+                staleness=staleness,
+                namespace_count=0,
+                commit_sha=None,
+            )
+
         # Load context (reads from target project — read-only)
         logger.info("Loading codebase context from %s", self._project_dir)
         try:
@@ -235,49 +279,45 @@ class CodebaseAnalyzer:
             context.project_name,
         )
 
-        # Build prompt
-        logger.info("Building analysis prompt (mode=%s)", mode)
-        prompt = build_analysis_prompt(
-            project_name=context.project_name,
-            structure_summary=context.structure_summary,
+        # Partition into flow groups (deterministic, no LM)
+        flow_groups = partition_flow_groups(context.structure)
+        logger.info("Partitioned into %d flow groups", len(flow_groups))
+
+        # Load source code for sub-LM prompts
+        source_by_namespace = load_source_map(context.structure, self._project_dir)
+
+        # Run deterministic pipeline (parallel sub-LM calls, schema validation)
+        pipeline = PipelineRunner(self._config)
+        pipeline_result = pipeline.run(
+            groups=flow_groups,
+            source_by_namespace=source_by_namespace,
             mode=mode,
         )
 
-        # Get beads tools (writes to output_dir via db_path)
-        try:
-            custom_tools = get_custom_tools(self._db_path)
-        except (TypeError, ValueError):
-            logger.warning("Beads tools unavailable, running without them")
-            custom_tools = {}
-
-        # Run engine
-        logger.info(
-            "Starting engine: root=%s, sub_high=%s, sub_low=%s",
-            self._config.root_model,
-            self._config.sub_lm_high_model,
-            self._config.sub_lm_low_model,
-        )
-        runner = EngineRunner(self._config)
-        engine_result = runner.run(
-            context=context.structure_summary,
-            custom_tools=custom_tools,
-            system_prompt=prompt,
-            structure_summary=context.structure_summary,
-        )
-
-        logger.info("Engine finished: status=%s, iterations=%d", engine_result.status, engine_result.iterations)
+        # Mechanical reduce: validated JSON → beads (stored in nuclode output dir, not target project)
+        if pipeline_result.analyses:
+            reduce_summary = reduce_to_beads(
+                pipeline_result.analyses, db_path=self._db_path, groups=flow_groups
+            )
+            logger.info(
+                "Reduce: %d beads, %d links, %d tags",
+                reduce_summary["beads_created"],
+                reduce_summary["links_created"],
+                reduce_summary["tags_applied"],
+            )
 
         # Store metadata on success (writes to output_dir)
         commit_sha = staleness.current_sha
-        if engine_result.status == "completed" and commit_sha:
+        if pipeline_result.status == "completed" and commit_sha:
             self.store_analysis_metadata(commit_sha)
 
         return AnalysisResult(
-            status=engine_result.status,
-            engine_result=engine_result,
+            status=pipeline_result.status,
+            engine_result=None,
             staleness=staleness,
             namespace_count=len(context.structure.namespaces),
             commit_sha=commit_sha,
+            pipeline_result=pipeline_result,
         )
 
     def run_incremental(

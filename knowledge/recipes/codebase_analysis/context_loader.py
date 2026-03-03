@@ -72,6 +72,29 @@ def load_codebase_context(
     )
 
 
+def load_source_map(structure: StructureResult, project_dir: Path) -> dict[str, str]:
+    """Load source code for all namespaces, keyed by namespace name.
+
+    Args:
+        structure: The extracted project structure.
+        project_dir: Root project directory for resolving relative paths.
+
+    Returns:
+        Dict mapping namespace name -> source code string.
+        Missing files map to empty string.
+    """
+    source_map: dict[str, str] = {}
+    for ns in structure.namespaces:
+        ns_path = Path(ns.path)
+        if not ns_path.is_absolute():
+            ns_path = project_dir / ns_path
+        try:
+            source_map[ns.name] = ns_path.read_text(encoding="utf-8")
+        except OSError:
+            source_map[ns.name] = ""
+    return source_map
+
+
 def load_source_for_namespace(namespace_path: str) -> str:
     """Load the source code for a specific namespace file.
 

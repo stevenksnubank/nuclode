@@ -1,15 +1,15 @@
 engine:
   root_lm:
-    backend: "anthropic"
+    backend: "litellm"
     model: "latest-opus"
     extended_thinking: true
     max_iterations: 30
   sub_lm:
     high_ambiguity:
-      backend: "anthropic"
+      backend: "litellm"
       model: "latest-sonnet"
     low_ambiguity:
-      backend: "anthropic"
+      backend: "litellm"
       model: "latest-haiku"
   threshold_tokens: 50000
 

@@ -10,9 +10,9 @@ from pathlib import Path
 import yaml
 
 MODEL_REGISTRY: dict[str, str] = {
-    "latest-opus": "claude-opus-4-6",
-    "latest-sonnet": "claude-sonnet-4-6",
-    "latest-haiku": "claude-haiku-4-5-20251001",
+    "latest-opus": "anthropic/claude-opus-4-6",
+    "latest-sonnet": "anthropic/claude-sonnet-4-6",
+    "latest-haiku": "anthropic/claude-haiku-4-5-20251001",
 }
 
 _DEFAULT_CONFIG_PATH = Path(__file__).parent / "config.yaml"
@@ -32,7 +32,7 @@ def resolve_model(alias: str) -> str:
     """
     if alias in MODEL_REGISTRY:
         return MODEL_REGISTRY[alias]
-    if alias.startswith("claude-"):
+    if alias.startswith("claude-") or alias.startswith("anthropic/"):
         return alias
     raise ValueError(
         f"Unknown model alias: {alias!r}. "
