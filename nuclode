@@ -140,7 +140,7 @@ cmd_install() {
         fi
     done
 
-    cp "$NUCLODE_DIR"/workspace/beads/* "$CLAUDE_DIR/beads/"
+    cp -r "$NUCLODE_DIR"/workspace/beads/* "$CLAUDE_DIR/beads/"
 
     # Copy all hooks (Python modules + bash scripts + config files)
     cp "$NUCLODE_DIR"/workspace/hooks/*.py "$CLAUDE_DIR/hooks/" 2>/dev/null || true
