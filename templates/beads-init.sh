@@ -28,6 +28,22 @@ fi
 cd "$PROJECT_DIR"
 bd init
 
+# Ensure .beads/ is gitignored so it doesn't get pushed
+if [ -f "$PROJECT_DIR/.gitignore" ]; then
+    if ! grep -q "^\.beads/" "$PROJECT_DIR/.gitignore" 2>/dev/null; then
+        echo "" >> "$PROJECT_DIR/.gitignore"
+        echo "# nuclode beads — local task tracking" >> "$PROJECT_DIR/.gitignore"
+        echo ".beads/" >> "$PROJECT_DIR/.gitignore"
+        echo "Added .beads/ to .gitignore"
+    fi
+else
+    cat > "$PROJECT_DIR/.gitignore" << 'GIEOF'
+# nuclode beads — local task tracking
+.beads/
+GIEOF
+    echo "Created .gitignore with .beads/"
+fi
+
 # Configure bv post-export hook if bv is available
 if command -v bv &>/dev/null; then
     BEADS_CONFIG="$PROJECT_DIR/.beads/config.yaml"
