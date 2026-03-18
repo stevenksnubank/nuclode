@@ -51,6 +51,18 @@ def run(input: dict) -> dict | None:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
+    # Capture current beads task ID for session-to-task binding
+    beads_task_id = ""
+    if Path(".beads").is_dir():
+        try:
+            result = subprocess.run(
+                ["bd", "current"], capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                beads_task_id = result.stdout.strip().splitlines()[0].split()[0]
+        except (FileNotFoundError, subprocess.TimeoutExpired, IndexError):
+            pass
+
     # Transcript size as session-size indicator (not a cost proxy — actual cost
     # depends on token counts, model pricing, and caching)
     transcript_bytes = 0
@@ -68,6 +80,7 @@ def run(input: dict) -> dict | None:
         "summary": summary,
         "transcript_path": transcript,
         "beads_dirty": beads_dirty,
+        "beads_task_id": beads_task_id,
         "transcript_bytes": transcript_bytes,
     }
 

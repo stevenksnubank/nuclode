@@ -74,6 +74,22 @@ def _check_beads(parts: list[str], project_dir: Path) -> None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
+    # Auto-inject currently claimed task details
+    try:
+        current_result = subprocess.run(
+            ["bd", "current"], capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+        )
+        if current_result.returncode == 0 and current_result.stdout.strip():
+            task_id = current_result.stdout.strip().splitlines()[0].split()[0]
+            show_result = subprocess.run(
+                ["bd", "show", task_id], capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+            )
+            if show_result.returncode == 0 and show_result.stdout.strip():
+                task_detail = show_result.stdout.strip()[:500]
+                parts.append(f"Current task: {task_detail}")
+    except (FileNotFoundError, subprocess.TimeoutExpired, IndexError):
+        pass
+
 
 def _check_analysis_freshness(parts: list[str], project_dir: Path) -> None:
     """Check if codebase analysis is current."""
@@ -115,6 +131,8 @@ def _load_previous_session(parts: list[str], current_cwd: str) -> None:
 
         # Only inject if same project directory
         if prev_cwd == current_cwd and prev_summary:
-            parts.append(f"Previous session ({prev_ts}, branch: {prev_branch}): {prev_summary}")
+            prev_task_id = session.get("beads_task_id", "")
+            task_context = f", task: {prev_task_id}" if prev_task_id else ""
+            parts.append(f"Previous session ({prev_ts}, branch: {prev_branch}{task_context}): {prev_summary}")
     except (json.JSONDecodeError, OSError):
         pass
