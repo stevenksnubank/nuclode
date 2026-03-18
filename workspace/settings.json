@@ -1,13 +1,166 @@
 {
-  "model": "opus",
+  "model": "sonnet",
+  "agent": "nuclode-guide",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/hooks/statusline.sh"
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py session:start session_start standard,strict"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|WebFetch",
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/network-guard.sh"
+            "command": "bash ~/.claude/hooks/network-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:suggest-compact suggest_compact strict",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:secrets-scan secrets_scan standard,strict",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:sast-gate sast_gate standard,strict",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:edit:format post_edit_format standard,strict",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:console-warn console_warn standard,strict",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:quality-gate quality_gate standard,strict",
+            "timeout": 30000,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:sast-scan sast_scan standard,strict",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:compact pre_compact standard,strict"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:tool-error-format tool_error_format standard,strict",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py stop:session-end session_end standard,strict",
+            "timeout": 10000,
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py stop:cost-tracker cost_tracker standard,strict",
+            "timeout": 10000,
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py stop:beads-sync beads_sync standard,strict",
+            "timeout": 10000,
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py stop:uncommitted-guard uncommitted_guard standard,strict",
+            "timeout": 10000
           }
         ]
       }

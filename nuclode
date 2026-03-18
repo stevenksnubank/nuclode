@@ -133,6 +133,13 @@ cmd_install() {
         fi
     done
 
+    # Copy includes (shared prompt sections)
+    if [ -d "$NUCLODE_DIR/workspace/agents/includes" ]; then
+        mkdir -p "$CLAUDE_DIR/agents/includes"
+        cp "$NUCLODE_DIR"/workspace/agents/includes/*.md "$CLAUDE_DIR/agents/includes/"
+        ok "Agent includes installed"
+    fi
+
     cp "$NUCLODE_DIR"/workspace/commands/agents/*.md "$CLAUDE_DIR/commands/agents/"
     for cmd_file in "$NUCLODE_DIR"/workspace/commands/*.md; do
         if [ -f "$cmd_file" ]; then
@@ -140,18 +147,32 @@ cmd_install() {
         fi
     done
 
-    cp "$NUCLODE_DIR"/workspace/beads/* "$CLAUDE_DIR/beads/"
+    cp -r "$NUCLODE_DIR"/workspace/beads/* "$CLAUDE_DIR/beads/"
 
+    # Copy all hooks (Python modules + bash scripts + config files)
+    cp "$NUCLODE_DIR"/workspace/hooks/*.py "$CLAUDE_DIR/hooks/" 2>/dev/null || true
+    cp "$NUCLODE_DIR"/workspace/hooks/*.sh "$CLAUDE_DIR/hooks/" 2>/dev/null || true
+    cp "$NUCLODE_DIR"/workspace/hooks/*.txt "$CLAUDE_DIR/hooks/" 2>/dev/null || true
+    chmod +x "$CLAUDE_DIR/hooks/"*.sh 2>/dev/null || true
+    ok "Hooks installed (Python runner + modules)"
+
+    # Copy all skills
     if [ -d "$NUCLODE_DIR/workspace/skills" ]; then
         cp "$NUCLODE_DIR"/workspace/skills/* "$CLAUDE_DIR/skills/" 2>/dev/null || true
         ok "Skills installed"
     fi
 
-    if [ -d "$NUCLODE_DIR/workspace/hooks" ]; then
-        cp "$NUCLODE_DIR"/workspace/hooks/* "$CLAUDE_DIR/hooks/"
-        chmod +x "$CLAUDE_DIR/hooks/"*.sh 2>/dev/null || true
-        ok "Network guard hooks installed"
-    fi
+    # Copy top-level commands (agents/ subdir handled separately above)
+    for cmd_file in "$NUCLODE_DIR"/workspace/commands/*.md; do
+        if [ -f "$cmd_file" ]; then
+            cp "$cmd_file" "$CLAUDE_DIR/commands/"
+        fi
+    done
+
+    # Create session and metrics directories
+    mkdir -p "$CLAUDE_DIR/sessions/checkpoints"
+    mkdir -p "$CLAUDE_DIR/metrics"
+    ok "Session and metrics directories created"
 
     cp "$NUCLODE_DIR/workspace/settings.json" "$CLAUDE_DIR/settings.json"
     cp "$NUCLODE_DIR/workspace/.mcp.json" "$CLAUDE_DIR/.mcp.json"
@@ -237,6 +258,9 @@ cmd_install() {
     echo "    1. Start a Claude Code session"
     echo "    2. Run 'nuclode init' in any project for beads"
     echo "    3. Use /agents:code-planner to plan features"
+    echo "    4. Use /build-fix, /refactor, /test-coverage for common tasks"
+    echo "    5. Use /checkpoint to save session state"
+    echo "    6. Set NUCLODE_HOOK_PROFILE=strict for full quality gates"
     echo ""
 }
 

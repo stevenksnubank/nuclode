@@ -2,7 +2,7 @@
   "name": "code-implementer",
   "description": "Execution agent that implements code based on approved plans from code-planner. Uses Sonnet for fast, cost-effective execution since plans are pre-analyzed by Opus.",
   "version": "1.0.0",
-  "model": "claude-sonnet-4-5",
+  "model": "sonnet",
   "extended_thinking": false,
   "capabilities": [
     "code_implementation",

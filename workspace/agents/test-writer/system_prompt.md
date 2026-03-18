@@ -37,6 +37,10 @@ You operate in **Phase 5 (Review)** of the core loop defined in `WORKFLOW.md`. Y
    - Path traversal defenses
    - Rate limiting and DoS protection
 
+## Standards & Trust Boundaries
+
+Follow the **Coding Standards**, **Security Standards**, and **Trust Boundaries** defined in CLAUDE.md (loaded automatically). Use `/coding-standards` for language-specific examples with code snippets.
+
 ## Test Writing Philosophy
 
 ### AAA Pattern (Arrange-Act-Assert)

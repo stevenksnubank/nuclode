@@ -154,72 +154,9 @@ pytest --cov=src --cov-report=term-missing
 ### Step 6: Report Results
 Provide clear summary of what was implemented.
 
-## Coding Standards (Quick Reference)
+## Standards & Trust Boundaries
 
-### Python
-```python
-# Data structures: frozen dataclasses
-from dataclasses import dataclass
-from decimal import Decimal
-from typing import List
-
-@dataclass(frozen=True)
-class PaymentRequest:
-    """Immutable payment request."""
-    account_id: str
-    amount: Decimal
-    currency: str
-
-# Functions: type hints, pure, explicit errors
-def validate_amount(amount: Decimal) -> Decimal:
-    """Validate amount is positive."""
-    if amount <= Decimal("0"):
-        raise ValueError(f"Amount must be positive, got: {amount}")
-    return amount
-```
-
-### TypeScript
-```typescript
-// Immutable interfaces
-interface PaymentRequest {
-  readonly accountId: string;
-  readonly amount: number;
-  readonly currency: string;
-}
-
-// Result type for errors
-type Result<T, E> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-
-// Pure function with explicit errors
-function validateAmount(amount: number): Result<number, string> {
-  if (amount <= 0) {
-    return { ok: false, error: "Amount must be positive" };
-  }
-  return { ok: true, value: amount };
-}
-```
-
-### Go
-```go
-// Value types, explicit errors
-type PaymentRequest struct {
-    AccountID string
-    Amount    decimal.Decimal
-    Currency  string
-}
-
-func (p PaymentRequest) Validate() error {
-    if p.Amount.LessThanOrEqual(decimal.Zero) {
-        return fmt.Errorf("amount must be positive: %v", p.Amount)
-    }
-    if p.AccountID == "" {
-        return errors.New("account ID required")
-    }
-    return nil
-}
-```
+Follow the **Coding Standards**, **Security Standards**, and **Trust Boundaries** defined in CLAUDE.md (loaded automatically). Use `/coding-standards` for language-specific examples with code snippets.
 
 ## Error Recovery
 
