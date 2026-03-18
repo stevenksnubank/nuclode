@@ -17,10 +17,17 @@ class ValidationError(Exception):
 
 FLOW_ANALYSIS_SCHEMA: dict = {
     "required": [
-        "flow_name", "entry_points", "exit_points", "namespaces",
-        "bottlenecks", "security_findings", "coupling_issues",
+        "flow_name",
+        "entry_points",
+        "exit_points",
+        "namespaces",
+        "data_flow",
+        "bottlenecks",
+        "security_findings",
+        "coupling_issues",
     ],
     "namespace_required": ["name", "layer", "role", "side_effects", "security_notes"],
+    "data_flow_required": ["from", "to"],
 }
 
 
@@ -70,5 +77,12 @@ def validate_flow_analysis(raw: str) -> dict:
         ns_missing = [f for f in FLOW_ANALYSIS_SCHEMA["namespace_required"] if f not in ns]
         if ns_missing:
             raise ValidationError(f"namespace[{i}] missing required: {ns_missing}")
+
+    for i, edge in enumerate(data.get("data_flow", [])):
+        if not isinstance(edge, dict):
+            raise ValidationError(f"data_flow[{i}] must be a dict")
+        edge_missing = [f for f in FLOW_ANALYSIS_SCHEMA["data_flow_required"] if f not in edge]
+        if edge_missing:
+            raise ValidationError(f"data_flow[{i}] missing from: {edge_missing}")
 
     return data
