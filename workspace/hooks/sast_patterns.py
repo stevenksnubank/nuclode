@@ -35,22 +35,22 @@ PATTERNS: dict[str, list[tuple[str, str, str, str]]] = {
         ("document.write XSS", r"""document\.write\s*\(""", "HIGH",
          "document.write() can inject scripts — use DOM methods instead"),
         ("dangerouslySetInnerHTML", r"""dangerouslySetInnerHTML""", "MEDIUM",
-         "Sanitize HTML before rendering"),
+         "Unsanitized HTML can enable XSS attacks — sanitize with DOMPurify or similar before rendering"),
     ],
     "ts": [],
     "tsx": [],
     "jsx": [],
     "go": [
         ("SQL injection", r"""(?:Query|Exec)\s*\(\s*(?:ctx\s*,\s*)?(?:fmt\.Sprintf|['""].*['""]?\s*\+)""", "HIGH",
-         "Use parameterized queries with $1/$2 placeholders"),
+         "String interpolation in SQL lets attackers manipulate queries — use parameterized queries with $1/$2 placeholders"),
         ("command injection", r"""exec\.Command\s*\(\s*['""](?:sh|bash|cmd)['""]""", "HIGH",
-         "Avoid shell execution — use exec.Command with direct args"),
+         "Shell execution lets attackers inject commands — use exec.Command with direct args instead"),
     ],
     "rb": [
         ("eval() usage", r"""\beval\s*\(""", "HIGH",
-         "Never use eval() with untrusted input"),
+         "eval() executes arbitrary code from the input — use a safe parser or dispatch table instead"),
         ("system() usage", r"""\bsystem\s*\(""", "MEDIUM",
-         "Use Open3 or similar for safer subprocess calls"),
+         "system() runs commands through the shell — use Open3 for safer subprocess calls"),
     ],
 }
 
