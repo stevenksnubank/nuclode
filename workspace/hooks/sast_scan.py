@@ -27,6 +27,13 @@ def run(input: dict) -> dict | None:
         return None
 
     findings = _scan_file(file_path, patterns)
+    try:
+        from hook_telemetry import log_event
+        if findings:
+            log_event("sast_scan", "warn", {"file": Path(file_path).name, "findings_count": len(findings)})
+    except Exception:
+        pass
+
     if not findings:
         return None
 

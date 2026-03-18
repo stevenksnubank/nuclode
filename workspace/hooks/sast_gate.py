@@ -35,6 +35,16 @@ def run(input: dict) -> dict | None:
         return None
 
     findings = _scan_staged_files()
+
+    try:
+        from hook_telemetry import log_event
+        if findings:
+            log_event("sast_gate", "block", {"findings_count": len(findings), "findings": findings[:5]}, blocked=True)
+        else:
+            log_event("sast_gate", "pass")
+    except Exception:
+        pass
+
     if not findings:
         return None
 
