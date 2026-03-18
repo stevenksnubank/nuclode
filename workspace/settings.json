@@ -101,6 +101,28 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py sub:agent-start agent_tracker standard,strict",
+            "timeout": 2000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py sub:agent-stop agent_tracker standard,strict",
+            "timeout": 2000
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "matcher": "*",
