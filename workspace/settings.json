@@ -77,6 +77,18 @@
         ]
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:tool-error-format tool_error_format standard,strict",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -105,6 +117,15 @@
             "command": "python3 ~/.claude/hooks/run_with_profile.py stop:beads-sync beads_sync standard,strict",
             "timeout": 10000,
             "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py stop:uncommitted-guard uncommitted_guard standard,strict",
+            "timeout": 10000
           }
         ]
       }

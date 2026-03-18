@@ -232,6 +232,8 @@ Assert: Verify expected outcome
 │   ├── suggest_compact.py     # PreToolUse - compaction nudge (strict only)
 │   ├── cost_tracker.py        # Stop - session metrics
 │   ├── beads_sync.py          # Stop - auto-sync beads
+│   ├── uncommitted_guard.py   # Stop - warn about uncommitted files
+│   ├── tool_error_format.py   # PostToolUseFailure - actionable error context
 │   ├── allowed-domains.txt
 │   └── blocked-domains.txt
 ├── sessions/                  # Session persistence (auto-created)
@@ -280,6 +282,8 @@ export NUCLODE_DISABLED_HOOKS="post:edit:format,post:quality-gate"
 | suggest_compact | no | no | yes | PreToolUse |
 | cost_tracker | no | yes | yes | Stop |
 | beads_sync | no | yes | yes | Stop |
+| uncommitted_guard | no | yes | yes | Stop |
+| tool_error_format | no | yes | yes | PostToolUseFailure |
 
 ## Project-Specific Configuration
 
