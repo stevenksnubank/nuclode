@@ -47,10 +47,10 @@ def _suggest_fix(tool_name: str, error: str, tool_input: dict) -> str:
             return "Command took too long; simplify or add a timeout"
 
     if tool_name == "Edit":
-        if "not found" in error_lower or "no such file" in error_lower:
-            return "Verify the file path exists; use Glob to search"
         if "old_string" in error_lower or "not unique" in error_lower:
             return "Read the file first to get the exact current content, then retry with more context"
+        if "not found" in error_lower or "no such file" in error_lower:
+            return "Verify the file path exists; use Glob to search"
 
     if tool_name == "Write":
         if "permission denied" in error_lower:

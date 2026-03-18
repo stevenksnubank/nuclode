@@ -168,6 +168,96 @@ class TestTrimFile:
             assert f.read_text(encoding="utf-8").strip().splitlines() == ["line1", "line2"]
 
 
+def _load_hook_module(name: str):
+    """Load a hook module from the workspace by name."""
+    from importlib.util import spec_from_file_location, module_from_spec
+    hook_path = Path(__file__).parent.parent / "workspace" / "hooks" / f"{name}.py"
+    spec = spec_from_file_location(name, str(hook_path))
+    if spec and spec.loader:
+        mod = module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    return None
+
+
+# ─── Uncommitted Guard Tests ─────────────────────────────────────────────
+
+class TestUncommittedGuard:
+    """Test the uncommitted_guard Stop hook."""
+
+    def test_clean_repo_returns_none(self):
+        mod = _load_hook_module("uncommitted_guard")
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="", stderr=""
+            )
+            assert mod.run({}) is None
+
+    def test_dirty_repo_returns_warning(self):
+        mod = _load_hook_module("uncommitted_guard")
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout=" M file.py\n?? new.txt\n", stderr=""
+            )
+            result = mod.run({})
+            assert result is not None
+            assert "uncommitted-guard" in result["systemMessage"]
+            assert "2 uncommitted" in result["systemMessage"]
+
+    def test_git_failure_returns_none(self):
+        mod = _load_hook_module("uncommitted_guard")
+        with patch("subprocess.run", side_effect=FileNotFoundError):
+            assert mod.run({}) is None
+
+    def test_many_files_truncated(self):
+        mod = _load_hook_module("uncommitted_guard")
+        files = "\n".join(f" M file{i}.py" for i in range(20))
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout=files, stderr=""
+            )
+            result = mod.run({})
+            assert "and 10 more" in result["systemMessage"]
+
+
+# ─── Tool Error Format Tests ─────────────────────────────────────────────
+
+class TestToolErrorFormat:
+    """Test the tool_error_format PostToolUseFailure hook."""
+
+    def test_permission_denied_bash_suggestion(self):
+        mod = _load_hook_module("tool_error_format")
+        result = mod.run({"tool_name": "Bash", "error": "Permission denied", "tool_input": {}})
+        assert "permission" in result["hookSpecificOutput"]["additionalContext"].lower()
+
+    def test_command_not_found_suggestion(self):
+        mod = _load_hook_module("tool_error_format")
+        result = mod.run({"tool_name": "Bash", "error": "command not found: foo", "tool_input": {}})
+        assert "installed" in result["hookSpecificOutput"]["additionalContext"].lower()
+
+    def test_edit_old_string_not_found(self):
+        mod = _load_hook_module("tool_error_format")
+        result = mod.run({"tool_name": "Edit", "error": "old_string not found in file", "tool_input": {}})
+        assert "Read the file" in result["hookSpecificOutput"]["additionalContext"]
+
+    def test_unknown_tool_default_suggestion(self):
+        mod = _load_hook_module("tool_error_format")
+        result = mod.run({"tool_name": "CustomTool", "error": "something broke", "tool_input": {}})
+        assert "retry" in result["hookSpecificOutput"]["additionalContext"].lower()
+
+    def test_empty_error_returns_none(self):
+        mod = _load_hook_module("tool_error_format")
+        assert mod.run({"tool_name": "Bash", "error": "", "tool_input": {}}) is None
+
+    def test_long_error_truncated(self):
+        mod = _load_hook_module("tool_error_format")
+        long_error = "x" * 500
+        result = mod.run({"tool_name": "Bash", "error": long_error, "tool_input": {}})
+        # Summary should be truncated to 200 chars
+        context = result["hookSpecificOutput"]["additionalContext"]
+        assert len(context) < 500
+
+
 def _get_runner_path() -> str:
     """Return the path to run_with_profile.py in the workspace."""
     return str(Path(__file__).parent.parent / "workspace" / "hooks" / "run_with_profile.py")

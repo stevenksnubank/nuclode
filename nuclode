@@ -133,6 +133,13 @@ cmd_install() {
         fi
     done
 
+    # Copy includes (shared prompt sections)
+    if [ -d "$NUCLODE_DIR/workspace/agents/includes" ]; then
+        mkdir -p "$CLAUDE_DIR/agents/includes"
+        cp "$NUCLODE_DIR"/workspace/agents/includes/*.md "$CLAUDE_DIR/agents/includes/"
+        ok "Agent includes installed"
+    fi
+
     cp "$NUCLODE_DIR"/workspace/commands/agents/*.md "$CLAUDE_DIR/commands/agents/"
     for cmd_file in "$NUCLODE_DIR"/workspace/commands/*.md; do
         if [ -f "$cmd_file" ]; then
