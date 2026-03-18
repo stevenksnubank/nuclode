@@ -471,7 +471,7 @@ class TestSessionStart:
         # No previous session, so should include guidance
         if result:
             context = result["hookSpecificOutput"]["additionalContext"]
-            assert "/guided" in context or "/quick-code" in context
+            assert "describe what you want" in context.lower() or "welcome" in context.lower()
 
     def test_detects_python_project(self, tmp_path):
         mod = _load_hook_module("session_start")

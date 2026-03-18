@@ -11,6 +11,18 @@
     "code_review",
     "security_awareness"
   ],
+  "tools": [
+    "Agent",
+    "Read",
+    "Grep",
+    "Glob",
+    "Edit",
+    "Write",
+    "Bash",
+    "Task",
+    "WebSearch",
+    "WebFetch"
+  ],
   "project_context": true,
   "access_project_context": true,
   "max_iterations": 50,

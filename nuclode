@@ -255,12 +255,12 @@ cmd_install() {
     fi
     echo ""
     echo "  Next steps:"
-    echo "    1. Start a Claude Code session"
-    echo "    2. Run 'nuclode init' in any project for beads"
-    echo "    3. Use /agents:code-planner to plan features"
-    echo "    4. Use /build-fix, /refactor, /test-coverage for common tasks"
-    echo "    5. Use /checkpoint to save session state"
-    echo "    6. Set NUCLODE_HOOK_PROFILE=strict for full quality gates"
+    echo "    1. cd into any project"
+    echo "    2. Type 'claude' to start"
+    echo "    3. Describe what you want to build — nuclode handles the rest"
+    echo ""
+    echo "  Security checks run automatically. No setup needed."
+    echo "  For advanced options: nuclode help"
     echo ""
 }
 

@@ -23,11 +23,10 @@ def run(input: dict) -> dict | None:
     _check_analysis_freshness(parts, project_dir)
     has_previous = _load_previous_session(parts, str(project_dir))
 
-    # Guide new users: suggest /guided if this looks like a fresh start
+    # Guide new users — no jargon, no slash commands
     if not has_previous:
         parts.append(
-            "Ready to build something? Try /guided for a walkthrough, "
-            "or /quick-code for a fast fix."
+            "Welcome! Just describe what you want to build or fix."
         )
 
     if not parts:

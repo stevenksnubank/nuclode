@@ -59,8 +59,7 @@ def run(input: dict) -> dict | None:
             "permissionDecisionReason": (
                 f"[sast-gate] BLOCKED: Found {len(findings)} HIGH severity security issue(s) in staged files:\n"
                 f"{details}\n\n"
-                "Fix these security issues before committing. These patterns are blocked because they "
-                "introduce exploitable vulnerabilities (injection, XSS, command execution)."
+                "Fix these before committing. Ask me to help fix them — I'll rewrite the code safely."
             ),
         }
     }

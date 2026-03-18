@@ -63,7 +63,10 @@ def run(input: dict) -> dict | None:
             "permissionDecisionReason": (
                 f"[secrets-scan] BLOCKED: Found {len(findings)} potential secret(s) in staged files:\n"
                 f"{details}\n\n"
-                "Remove secrets before committing. Use environment variables or a secret manager instead."
+                "How to fix: Move secrets to environment variables.\n"
+                "  Instead of:  API_KEY = \"sk_live_abc123\"\n"
+                "  Use:         API_KEY = os.environ[\"API_KEY\"]\n\n"
+                "Then set the variable in your shell: export API_KEY=sk_live_abc123"
             ),
         }
     }
