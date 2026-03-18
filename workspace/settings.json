@@ -46,6 +46,16 @@
             "timeout": 10000
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:sast-gate sast_gate standard,strict",
+            "timeout": 10000
+          }
+        ]
       }
     ],
     "PostToolUse": [

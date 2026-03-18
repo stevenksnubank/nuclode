@@ -7,8 +7,9 @@ nuclode is a security layer for Claude Code. It enforces coding standards, block
 ## What's Running Automatically
 
 - **Secrets scan** — BLOCKS commits containing API keys, tokens, or passwords
+- **SAST gate** — BLOCKS commits with SQL injection, eval(), XSS, shell injection
 - **Network guard** — BLOCKS requests to unauthorized domains
-- **SAST scan** — warns about SQL injection, XSS, eval, command injection
+- **SAST scan** — warns about security anti-patterns on every edit
 - **Quality gate** — runs linters after every edit
 - **Debug detection** — flags leftover console.log/print statements
 - **Auto-formatting** — formats code on save (ruff, prettier, gofmt, etc.)
