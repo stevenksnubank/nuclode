@@ -27,6 +27,24 @@ Research → Plan → Annotate → Implement → Review
 3. **Implement** with `/agents:code-implementer` — execute the approved plan
 4. **Review** with `/agents:code-reviewer`, `/agents:active-defender`, `/agents:test-writer`
 
+## Core Development Loop
+
+```
+Research → Plan → Annotate → Implement → Review
+              ↑       │
+              └───────┘ (1-6 rounds)
+```
+
+| Phase | Agent | Artifact |
+|-------|-------|----------|
+| 1. Research | code-planner | research notes |
+| 2. Plan | code-planner | implementation plan |
+| 3. Annotate | human + code-planner | annotated plan (1-6 rounds) |
+| 4. Implement | code-implementer | working, tested code |
+| 5. Review | code-reviewer, active-defender, test-writer | assessment report |
+
+**Complexity scaling:** Single file fix → inline plan. 2-5 files → written plan, 1-2 rounds. 5+ files → research phase. Security-critical → full cycle. See `WORKFLOW.md` for full details.
+
 ---
 
 ## Beads Integration
