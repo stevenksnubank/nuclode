@@ -197,16 +197,89 @@ Assert: Verify expected outcome
 
 ```
 ~/.claude/
-├── CLAUDE.md              # This file - global standards
+├── CLAUDE.md              # This file - global standards + workflow overview
+├── AGENTS.md              # Agent descriptions and session completion
+├── WORKFLOW.md            # Core development loop specification
+├── settings.json          # Model, hooks, and runtime configuration
+├── .mcp.json              # MCP server definitions
+├── agents/
+│   ├── code-planner/      # Opus 4.6 + Thinking
+│   ├── code-implementer/  # Sonnet 4.5
+│   ├── code-reviewer/     # Opus 4.6 + Thinking
+│   ├── active-defender/   # Opus 4.6 + Thinking
+│   └── test-writer/       # Sonnet 4.5
 ├── commands/
-│   └── agents/            # Agent slash commands
-├── agents/                # Agent configurations
+│   ├── agents/            # Agent slash commands
+│   ├── build-fix.md       # /build-fix
+│   ├── refactor.md        # /refactor
+│   ├── test-coverage.md   # /test-coverage
+│   ├── checkpoint.md      # /checkpoint
+│   └── session-status.md  # /session-status
+├── skills/
+│   ├── codebase-analysis.md
+│   ├── beads-graph-orchestration.md
+│   ├── tdd-workflow.md
+│   └── security-review.md
 ├── hooks/
-│   ├── network-guard.sh   # PreToolUse hook - blocks unapproved domains
-│   ├── allowed-domains.txt # Approved domains for network access
-│   └── blocked-domains.txt # Always-blocked domains (exfiltration targets)
-└── settings.json          # Claude Code settings
+│   ├── run_with_profile.py    # Python runner (importlib-based module loader)
+│   ├── network-guard.sh       # PreToolUse - domain guard (bash + jq)
+│   ├── session_start.py       # SessionStart - project detection + session context
+│   ├── session_end.py         # Stop - persist session state
+│   ├── pre_compact.py         # PreCompact - save state before compaction
+│   ├── post_edit_format.py    # PostToolUse - auto-format
+│   ├── console_warn.py        # PostToolUse - debug statement warnings
+│   ├── quality_gate.py        # PostToolUse - lint/typecheck (strict only)
+│   ├── suggest_compact.py     # PreToolUse - compaction nudge (strict only)
+│   ├── cost_tracker.py        # Stop - session metrics
+│   ├── beads_sync.py          # Stop - auto-sync beads
+│   ├── allowed-domains.txt
+│   └── blocked-domains.txt
+├── sessions/                  # Session persistence (auto-created)
+│   ├── latest.json            # Most recent session state
+│   ├── history.jsonl          # Session history (last 50)
+│   └── checkpoints/           # Manual checkpoints
+├── metrics/                   # Usage metrics (auto-created)
+│   └── costs.jsonl            # Session cost tracking
+└── beads/                     # Beads integration templates
 ```
+
+## Hook Architecture
+
+Hooks use a Python runner (`run_with_profile.py`) that loads hook modules via `importlib`. Each hook module exports `def run(input: dict) -> dict | None`. The only exception is `network-guard.sh` (bash + jq, security boundary).
+
+```
+Claude Code → python3 run_with_profile.py <hook-id> <module> <profiles>
+                ├── Profile check (fast-path exit if not active)
+                ├── json.loads(stdin)
+                ├── importlib.load(<module>.py)
+                ├── Validate module has callable run()
+                └── module.run(input) → JSON output or silent exit
+```
+
+## Hook Profiles
+
+Control hook behavior via environment variables:
+
+```bash
+# Profiles: minimal, standard (default), strict
+export NUCLODE_HOOK_PROFILE=standard
+
+# Disable specific hooks
+export NUCLODE_DISABLED_HOOKS="post:edit:format,post:quality-gate"
+```
+
+| Hook | minimal | standard | strict | Lifecycle |
+|------|---------|----------|--------|-----------|
+| network-guard (bash) | yes | yes | yes | PreToolUse |
+| session_start | no | yes | yes | SessionStart |
+| session_end | no | yes | yes | Stop |
+| pre_compact | no | yes | yes | PreCompact |
+| post_edit_format | no | yes | yes | PostToolUse |
+| console_warn | no | yes | yes | PostToolUse |
+| quality_gate | no | no | yes | PostToolUse |
+| suggest_compact | no | no | yes | PreToolUse |
+| cost_tracker | no | yes | yes | Stop |
+| beads_sync | no | yes | yes | Stop |
 
 ## Project-Specific Configuration
 
