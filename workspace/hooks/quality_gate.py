@@ -16,12 +16,17 @@ def run(input: dict) -> dict | None:
     if not issues:
         return None
 
-    context = f"[quality-gate] {issues}"
+    user_msg = "I noticed a code quality issue. Let me walk you through it."
+    claude_context = (
+        f"[code-quality] {issues}. "
+        "Explain the linting issue to the user in plain language, "
+        "propose the fix, and apply it after they agree."
+    )
     return {
-        "systemMessage": context,
+        "systemMessage": user_msg,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": context,
+            "additionalContext": claude_context,
         }
     }
 

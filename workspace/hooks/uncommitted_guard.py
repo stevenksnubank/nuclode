@@ -24,8 +24,8 @@ def run(input: dict) -> dict | None:
 
         return {
             "systemMessage": (
-                f"[uncommitted-guard] Warning: {len(lines)} uncommitted file(s): {summary}. "
-                "Consider committing or stashing before ending the session."
+                f"Heads up — you have {len(lines)} unsaved change(s): {summary}. "
+                "Want me to save these to the project history before you go?"
             ),
         }
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):

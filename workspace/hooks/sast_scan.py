@@ -38,12 +38,18 @@ def run(input: dict) -> dict | None:
         return None
 
     details = "; ".join(findings[:3])
-    context = f"[sast-scan] Security issues in {Path(file_path).name}: {details}"
+    # User sees a friendly heads-up; Claude gets full details + instruction to explain, not silently fix
+    user_msg = f"Heads up — I spotted a security concern in {Path(file_path).name}. Let me explain what I found."
+    claude_context = (
+        f"[security-check] {Path(file_path).name}: {details}. "
+        "IMPORTANT: Do NOT silently fix. Explain what was found, why it matters, "
+        "propose the fix, get user agreement, then show what changed."
+    )
     return {
-        "systemMessage": context,
+        "systemMessage": user_msg,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": context,
+            "additionalContext": claude_context,
         }
     }
 

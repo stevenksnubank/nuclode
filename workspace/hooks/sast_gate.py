@@ -57,9 +57,9 @@ def run(input: dict) -> dict | None:
             "hookEventName": "PreToolUse",
             "permissionDecision": "block",
             "permissionDecisionReason": (
-                f"[sast-gate] BLOCKED: Found {len(findings)} HIGH severity security issue(s) in staged files:\n"
+                f"I caught {len(findings)} security issue(s) in staged files that need attention:\n"
                 f"{details}\n\n"
-                "Fix these before committing. Ask me to help fix them — I'll rewrite the code safely."
+                "This is a common pattern to catch — just say \"fix the security issues\" and I'll rewrite the code safely."
             ),
         }
     }

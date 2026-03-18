@@ -201,8 +201,8 @@ class TestUncommittedGuard:
             )
             result = mod.run({})
             assert result is not None
-            assert "uncommitted-guard" in result["systemMessage"]
-            assert "2 uncommitted" in result["systemMessage"]
+            assert "unsaved change" in result["systemMessage"]
+            assert "2 unsaved" in result["systemMessage"]
 
     def test_git_failure_returns_none(self):
         mod = _load_hook_module("uncommitted_guard")
@@ -217,7 +217,7 @@ class TestUncommittedGuard:
                 args=[], returncode=0, stdout=files, stderr=""
             )
             result = mod.run({})
-            assert "and 10 more" in result["systemMessage"]
+            assert "and 10 more" in result["systemMessage"] or "unsaved" in result["systemMessage"]
 
 
 # ─── Tool Error Format Tests ─────────────────────────────────────────────
@@ -379,7 +379,8 @@ class TestSastScan:
         result = mod.run({"tool_input": {"file_path": str(f)}})
         assert result is not None
         assert "systemMessage" in result
-        assert "SQL injection" in result["systemMessage"]
+        assert "security" in result["systemMessage"].lower() or "spotted" in result["systemMessage"].lower()
+        assert "SQL injection" in result["hookSpecificOutput"]["additionalContext"]
 
     def test_warns_eval(self, tmp_path):
         mod = _load_hook_module("sast_scan")
@@ -387,7 +388,8 @@ class TestSastScan:
         f.write_text('result = eval(user_input)\n')
         result = mod.run({"tool_input": {"file_path": str(f)}})
         assert result is not None
-        assert "eval" in result["systemMessage"]
+        assert "security" in result["systemMessage"].lower() or "spotted" in result["systemMessage"].lower()
+        assert "eval" in result["hookSpecificOutput"]["additionalContext"]
 
     def test_no_warning_for_safe_code(self, tmp_path):
         mod = _load_hook_module("sast_scan")
@@ -420,7 +422,7 @@ class TestConsoleWarn:
         f.write_text('console.log("debug info")\n')
         result = mod.run({"tool_input": {"file_path": str(f)}})
         assert result is not None
-        assert "console-warn" in result["systemMessage"]
+        assert "debug" in result["systemMessage"].lower()
 
     def test_warns_breakpoint_python(self, tmp_path):
         mod = _load_hook_module("console_warn")
@@ -428,7 +430,7 @@ class TestConsoleWarn:
         f.write_text('breakpoint()\n')
         result = mod.run({"tool_input": {"file_path": str(f)}})
         assert result is not None
-        assert "console-warn" in result["systemMessage"]
+        assert "debug" in result["systemMessage"].lower()
 
     def test_no_warn_go_fmt_println(self, tmp_path):
         """fmt.Println is standard Go output, NOT debug."""

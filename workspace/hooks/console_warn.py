@@ -36,12 +36,17 @@ def run(input: dict) -> dict | None:
     basename = Path(file_path).name
     warn = f"Debug statements detected in {basename}: {'; '.join(hits[:3])}"
 
-    context = f"[console-warn] {warn}"
+    user_msg = f"I noticed what looks like debug code left in {basename}. Want me to clean it up?"
+    claude_context = (
+        f"[debug-cleanup] {basename}: {'; '.join(hits[:3])}. "
+        "Tell the user what you found (e.g. 'there's a console.log on line 5 that looks like it was "
+        "used for debugging'). Ask if they want it removed — it may be intentional."
+    )
     return {
-        "systemMessage": context,
+        "systemMessage": user_msg,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": context,
+            "additionalContext": claude_context,
         }
     }
 

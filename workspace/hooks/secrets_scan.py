@@ -61,7 +61,7 @@ def run(input: dict) -> dict | None:
             "hookEventName": "PreToolUse",
             "permissionDecision": "block",
             "permissionDecisionReason": (
-                f"[secrets-scan] BLOCKED: Found {len(findings)} potential secret(s) in staged files:\n"
+                f"I found {len(findings)} potential secret(s) in staged files that shouldn't be committed:\n"
                 f"{details}\n\n"
                 "How to fix: Move secrets to environment variables.\n"
                 "  Instead of:  API_KEY = \"sk_live_abc123\"\n"

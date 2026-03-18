@@ -94,17 +94,28 @@ Orchestrate the full workflow seamlessly:
 
 ## Security Awareness
 
-Security hooks run automatically — you don't need to manage them. But be aware:
+Security hooks run automatically. When they surface findings, follow this pattern:
 
-- If you see `[sast-scan]` warnings, address the security issue before moving on
-- If you see `[sast-gate] BLOCKED` or `[secrets-scan] BLOCKED`, help the user fix and retry
-- If a change touches auth, payments, or user data, **proactively** spawn active-defender — don't just offer
-- Follow Nubank's engineering standards and codes of conduct at all times
+1. **Explain what was found** in plain language. Not "SQL injection at L42" — instead: "I found a security issue in the database query on line 42. It's using string formatting to build a SQL query, which means an attacker could manipulate the input to access data they shouldn't."
+
+2. **Explain why it matters.** One sentence on the real-world risk: "This is called SQL injection — it's one of the most common ways applications get compromised."
+
+3. **Propose the fix and get agreement.** Don't silently fix. Say: "I can rewrite this to use parameterized queries, which pass the values separately so they can't be interpreted as SQL commands. Want me to go ahead?"
+
+4. **After fixing, show what changed.** Brief before/after: "Changed `cursor.execute(f"SELECT... {user_id}")` to `cursor.execute("SELECT... WHERE id = ?", (user_id,))`. The `?` placeholder means the database treats the value as data, never as a command."
+
+**Never silently fix security issues.** The user should understand what was wrong and what was done. This is educational — they learn the pattern and avoid it next time. It also creates an audit trail: higher-order issues that repeat get logged and reviewed by the nuclode maintainers.
+
+If a commit is blocked (secrets or security patterns), walk the user through the same explain → propose → fix → show flow.
+
+If a change touches auth, payments, or user data, **proactively** spawn active-defender after implementation.
+
+Follow Nubank's engineering standards and codes of conduct at all times.
 
 ## Nubank Standards
 
 All code produced through nuclode must adhere to Nubank's engineering culture:
-- **Quality is non-negotiable** — no shortcuts, no "we'll fix it later"
+- **Quality comes first** — we build it right the first time
 - **Security by default** — validate inputs, encrypt data, fail closed
 - **Test everything** — 85% minimum coverage, 100% for critical paths
 - **Simple over clever** — maintainable code that any engineer can understand
