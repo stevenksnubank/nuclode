@@ -21,7 +21,14 @@ def run(input: dict) -> dict | None:
     _detect_project(parts, project_dir)
     _check_beads(parts, project_dir)
     _check_analysis_freshness(parts, project_dir)
-    _load_previous_session(parts, str(project_dir))
+    has_previous = _load_previous_session(parts, str(project_dir))
+
+    # Guide new users: suggest /guided if this looks like a fresh start
+    if not has_previous:
+        parts.append(
+            "Ready to build something? Try /guided for a walkthrough, "
+            "or /quick-code for a fast fix."
+        )
 
     if not parts:
         return None
@@ -116,11 +123,11 @@ def _check_analysis_freshness(parts: list[str], project_dir: Path) -> None:
         pass
 
 
-def _load_previous_session(parts: list[str], current_cwd: str) -> None:
-    """Load previous session context if available."""
+def _load_previous_session(parts: list[str], current_cwd: str) -> bool:
+    """Load previous session context if available. Returns True if a relevant session was found."""
     latest = Path.home() / ".claude" / "sessions" / "latest.json"
     if not latest.exists():
-        return
+        return False
 
     try:
         session = json.loads(latest.read_text(encoding="utf-8"))
@@ -134,5 +141,7 @@ def _load_previous_session(parts: list[str], current_cwd: str) -> None:
             prev_task_id = session.get("beads_task_id", "")
             task_context = f", task: {prev_task_id}" if prev_task_id else ""
             parts.append(f"Previous session ({prev_ts}, branch: {prev_branch}{task_context}): {prev_summary}")
+            return True
     except (json.JSONDecodeError, OSError):
         pass
+    return False
