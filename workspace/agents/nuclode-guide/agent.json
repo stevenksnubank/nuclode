@@ -2,8 +2,8 @@
   "name": "nuclode-guide",
   "description": "Default nuclode interface — triages user intent and routes to the right workflow automatically. Secure vibe coding layer.",
   "version": "1.0.0",
-  "model": "claude-opus-4-6",
-  "extended_thinking": true,
+  "model": "claude-sonnet-4-6",
+  "extended_thinking": false,
   "capabilities": [
     "task_triage",
     "workflow_routing",
