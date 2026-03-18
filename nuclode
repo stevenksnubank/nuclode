@@ -38,13 +38,25 @@ cmd_install() {
 
     echo ""
     echo "  ╔═══════════════════════════════════════╗"
-    echo "  ║     nuclode - Agentic Workspace       ║"
-    echo "  ║   nu + claude + code = nucleotide     ║"
+    echo "  ║  nuclode — secure coding with Claude  ║"
     echo "  ╚═══════════════════════════════════════╝"
     echo ""
 
     # ─── Step 1: Prerequisites ────────────────────────────────────────
     info "Checking prerequisites..."
+
+    # Critical dependencies (hooks won't work without these)
+    if ! command -v git &> /dev/null; then
+        error "git is required but not found. Install git first."
+        exit 1
+    fi
+    ok "git found"
+
+    if ! command -v python3 &> /dev/null; then
+        error "python3 is required but not found. Install Python 3.10+ first."
+        exit 1
+    fi
+    ok "python3 found: $(python3 --version 2>&1)"
 
     # Check Claude Code CLI
     if command -v claude &> /dev/null; then
@@ -94,6 +106,25 @@ cmd_install() {
             error "Could not install jq automatically. Please install it manually."
         fi
         ok "jq installed"
+    fi
+
+    # Python code quality (ruff — used by formatting + linting hooks)
+    if command -v ruff &> /dev/null; then
+        ok "ruff found"
+    else
+        info "Installing ruff (Python linter/formatter)..."
+        if command -v brew &> /dev/null; then
+            brew install ruff 2>/dev/null
+        elif command -v pipx &> /dev/null; then
+            pipx install ruff 2>/dev/null
+        elif command -v pip3 &> /dev/null; then
+            pip3 install --user ruff --quiet 2>/dev/null || pip3 install ruff --quiet 2>/dev/null
+        fi
+        if command -v ruff &> /dev/null; then
+            ok "ruff installed"
+        else
+            warn "ruff not installed — Python formatting/linting will be skipped"
+        fi
     fi
 
     # ─── Step 2: Backup ──────────────────────────────────────────────
@@ -242,10 +273,42 @@ cmd_install() {
         echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
     fi
 
+    # ─── Step 7: Verify Installation ──────────────────────────────────
+    info "Verifying installation..."
+
+    VERIFY_ERRORS=0
+
+    # Check hooks are loadable
+    if python3 -c "import json; json.load(open('$CLAUDE_DIR/settings.json'))" 2>/dev/null; then
+        ok "settings.json valid"
+    else
+        error "settings.json is invalid!"
+        VERIFY_ERRORS=$((VERIFY_ERRORS + 1))
+    fi
+
+    # Check hook runner works
+    if echo '{}' | python3 "$CLAUDE_DIR/hooks/run_with_profile.py" test:verify nonexistent minimal 2>/dev/null; then
+        ok "Hook runner works"
+    else
+        error "Hook runner failed!"
+        VERIFY_ERRORS=$((VERIFY_ERRORS + 1))
+    fi
+
+    # Count installed components
+    HOOK_COUNT=$(ls "$CLAUDE_DIR/hooks/"*.py 2>/dev/null | wc -l | tr -d ' ')
+    AGENT_COUNT=$(ls -d "$CLAUDE_DIR/agents/"*/ 2>/dev/null | wc -l | tr -d ' ')
+    CMD_COUNT=$(ls "$CLAUDE_DIR/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
+    SKILL_COUNT=$(ls "$CLAUDE_DIR/skills/"*.md 2>/dev/null | wc -l | tr -d ' ')
+    ok "Installed: ${HOOK_COUNT} hooks, ${AGENT_COUNT} agents, ${CMD_COUNT} commands, ${SKILL_COUNT} skills"
+
+    if [ "$VERIFY_ERRORS" -gt 0 ]; then
+        error "$VERIFY_ERRORS verification errors — check output above"
+    fi
+
     # ─── Done! ────────────────────────────────────────────────────────
     echo ""
     echo "  ╔═══════════════════════════════════════╗"
-    echo "  ║      nuclode installed!               ║"
+    echo "  ║         nuclode installed!            ║"
     echo "  ╚═══════════════════════════════════════╝"
     echo ""
     echo "  Workspace: $CLAUDE_DIR"

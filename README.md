@@ -1,6 +1,6 @@
 # nuclode
 
-Secure vibe coding with Claude Code. Describe what you want to build — nuclode handles the security, quality, and workflow automatically.
+Nubank + Claude Code = **nuclode**. Secure coding that runs alongside Claude — describe what you want to build, and nuclode handles the security, quality, and workflow automatically.
 
 ```
 You: "Add a password reset flow"
@@ -38,16 +38,10 @@ nuclode sits between you and Claude Code as a security and quality layer. You ta
 ## Install
 
 ```bash
-git clone https://github.com/stevenksnubank/nuclode.git ~/dev/nuclode
-cd ~/dev/nuclode && ./nuclode install
+git clone https://github.com/stevenksnubank/nuclode.git ~/dev/nuclode && ~/dev/nuclode/nuclode install
 ```
 
-Then:
-```bash
-cd your-project
-claude
-# Just describe what you want to build
-```
+That's it. One command installs everything: agents, hooks, security guards, formatters, dependencies. Then open any project with `claude` and start building.
 
 ## How it works
 
