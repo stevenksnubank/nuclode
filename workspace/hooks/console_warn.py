@@ -36,10 +36,12 @@ def run(input: dict) -> dict | None:
     basename = Path(file_path).name
     warn = f"Debug statements detected in {basename}: {'; '.join(hits[:3])}"
 
+    context = f"[console-warn] {warn}"
     return {
+        "systemMessage": context,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": f"[console-warn] {warn}",
+            "additionalContext": context,
         }
     }
 

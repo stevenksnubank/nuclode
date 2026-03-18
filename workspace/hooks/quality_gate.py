@@ -16,10 +16,12 @@ def run(input: dict) -> dict | None:
     if not issues:
         return None
 
+    context = f"[quality-gate] {issues}"
     return {
+        "systemMessage": context,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": f"[quality-gate] {issues}",
+            "additionalContext": context,
         }
     }
 

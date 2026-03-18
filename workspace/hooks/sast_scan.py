@@ -76,10 +76,12 @@ def run(input: dict) -> dict | None:
         return None
 
     details = "; ".join(findings[:3])
+    context = f"[sast-scan] Security issues in {Path(file_path).name}: {details}"
     return {
+        "systemMessage": context,
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": f"[sast-scan] Security issues in {Path(file_path).name}: {details}",
+            "additionalContext": context,
         }
     }
 
