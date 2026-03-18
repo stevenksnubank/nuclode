@@ -31,6 +31,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:secrets-scan secrets_scan standard,strict",
+            "timeout": 10000
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -59,9 +69,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py post:quality-gate quality_gate strict",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:quality-gate quality_gate standard,strict",
             "timeout": 30000,
             "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py post:sast-scan sast_scan standard,strict",
+            "timeout": 5000
           }
         ]
       }

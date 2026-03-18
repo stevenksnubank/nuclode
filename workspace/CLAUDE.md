@@ -214,7 +214,9 @@ Assert: Verify expected outcome
 │   ├── refactor.md        # /refactor
 │   ├── test-coverage.md   # /test-coverage
 │   ├── checkpoint.md      # /checkpoint
-│   └── session-status.md  # /session-status
+│   ├── session-status.md  # /session-status
+│   ├── guided.md          # /guided — interactive walkthrough
+│   └── quick-code.md      # /quick-code — fast path for small changes
 ├── skills/
 │   ├── codebase-analysis.md
 │   ├── beads-graph-orchestration.md
@@ -234,6 +236,8 @@ Assert: Verify expected outcome
 │   ├── beads_sync.py          # Stop - auto-sync beads
 │   ├── uncommitted_guard.py   # Stop - warn about uncommitted files
 │   ├── tool_error_format.py   # PostToolUseFailure - actionable error context
+│   ├── secrets_scan.py        # PreToolUse - BLOCKS commits with secrets
+│   ├── sast_scan.py           # PostToolUse - security anti-pattern detection
 │   ├── allowed-domains.txt
 │   └── blocked-domains.txt
 ├── sessions/                  # Session persistence (auto-created)
@@ -278,12 +282,14 @@ export NUCLODE_DISABLED_HOOKS="post:edit:format,post:quality-gate"
 | pre_compact | no | yes | yes | PreCompact |
 | post_edit_format | no | yes | yes | PostToolUse |
 | console_warn | no | yes | yes | PostToolUse |
-| quality_gate | no | no | yes | PostToolUse |
+| quality_gate | no | yes | yes | PostToolUse |
 | suggest_compact | no | no | yes | PreToolUse |
 | cost_tracker | no | yes | yes | Stop |
 | beads_sync | no | yes | yes | Stop |
 | uncommitted_guard | no | yes | yes | Stop |
 | tool_error_format | no | yes | yes | PostToolUseFailure |
+| secrets_scan | no | yes | yes | PreToolUse (BLOCKING) |
+| sast_scan | no | yes | yes | PostToolUse |
 
 ## Project-Specific Configuration
 
