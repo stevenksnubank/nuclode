@@ -1,53 +1,70 @@
 #!/bin/bash
-# check-standards-sync.sh - Verify coding standards are identical across agents
+# check-standards-sync.sh - Verify coding standards architecture is consistent
 set -euo pipefail
 
 AGENTS_DIR="${1:-workspace/agents}"
-REFERENCE="$AGENTS_DIR/code-planner/system_prompt.md"
 ERRORS=0
 
-extract_standards() {
-    sed -n '/^## Coding Standards$/,/^## [^C]/{ /^## [^C]/d; p; }' "$1"
-}
+# 1. Verify canonical sources exist
+echo "Checking canonical sources..."
 
-REF_STANDARDS=$(extract_standards "$REFERENCE")
+if [ ! -f "workspace/CLAUDE.md" ]; then
+    echo "MISSING: workspace/CLAUDE.md (authoritative standards)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+if [ ! -f "workspace/skills/coding-standards.md" ]; then
+    echo "MISSING: workspace/skills/coding-standards.md (detailed examples)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+if [ ! -f "$AGENTS_DIR/includes/coding-standards.md" ]; then
+    echo "MISSING: $AGENTS_DIR/includes/coding-standards.md (reference copy)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+if [ ! -f "$AGENTS_DIR/includes/trust-boundary.md" ]; then
+    echo "MISSING: $AGENTS_DIR/includes/trust-boundary.md (reference copy)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# 2. Verify CLAUDE.md has coding standards section
+if ! grep -q "^## Coding Standards" workspace/CLAUDE.md; then
+    echo "MISSING: ## Coding Standards section in CLAUDE.md"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# 3. Verify all agents reference standards (not inline them)
+echo "Checking agent prompts reference standards..."
 
 for agent_dir in "$AGENTS_DIR"/*/; do
     [ ! -f "$agent_dir/system_prompt.md" ] && continue
     AGENT=$(basename "$agent_dir")
     [ "$AGENT" = "_base" ] && continue
     [ "$AGENT" = "includes" ] && continue
-    AGENT_STANDARDS=$(extract_standards "$agent_dir/system_prompt.md")
-    if [ "$REF_STANDARDS" != "$AGENT_STANDARDS" ]; then
-        echo "DRIFT: $AGENT coding standards differ from code-planner"
-        diff <(echo "$REF_STANDARDS") <(echo "$AGENT_STANDARDS") || true
+
+    # Should have the reference section
+    if ! grep -q "^## Standards & Trust Boundaries" "$agent_dir/system_prompt.md"; then
+        echo "MISSING: $AGENT lacks '## Standards & Trust Boundaries' reference"
         ERRORS=$((ERRORS + 1))
     fi
-done
 
-# Also check trust-boundary section sync
-extract_trust_boundary() {
-    sed -n '/^## Trust Boundaries$/,/^## [^T]/{ /^## [^T]/d; p; }' "$1"
-}
+    # Should NOT have inline coding standards (indicates duplication)
+    if grep -q "^## Coding Standards$" "$agent_dir/system_prompt.md"; then
+        echo "DRIFT: $AGENT has inline '## Coding Standards' — should reference CLAUDE.md instead"
+        ERRORS=$((ERRORS + 1))
+    fi
 
-REF_TRUST=$(extract_trust_boundary "$REFERENCE")
-
-for agent_dir in "$AGENTS_DIR"/*/; do
-    [ ! -f "$agent_dir/system_prompt.md" ] && continue
-    AGENT=$(basename "$agent_dir")
-    [ "$AGENT" = "_base" ] && continue
-    [ "$AGENT" = "includes" ] && continue
-    AGENT_TRUST=$(extract_trust_boundary "$agent_dir/system_prompt.md")
-    if [ "$REF_TRUST" != "$AGENT_TRUST" ]; then
-        echo "DRIFT: $AGENT trust boundary differs from code-planner"
-        diff <(echo "$REF_TRUST") <(echo "$AGENT_TRUST") || true
+    # Should NOT have inline trust boundaries (indicates duplication)
+    if grep -q "^## Trust Boundaries$" "$agent_dir/system_prompt.md"; then
+        echo "DRIFT: $AGENT has inline '## Trust Boundaries' — should reference CLAUDE.md instead"
         ERRORS=$((ERRORS + 1))
     fi
 done
 
 if [ "$ERRORS" -eq 0 ]; then
-    echo "OK: All agents have identical coding standards and trust boundaries"
+    echo "OK: Standards architecture is consistent (CLAUDE.md authoritative, agents reference, skill provides examples)"
 else
-    echo "FAIL: $ERRORS agents have drifted"
+    echo "FAIL: $ERRORS issues found"
     exit 1
 fi
