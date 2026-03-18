@@ -56,6 +56,16 @@
             "timeout": 10000
           }
         ]
+      },
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:pages-guard pages_guard standard,strict",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "PostToolUse": [
