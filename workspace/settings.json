@@ -1,5 +1,6 @@
 {
   "model": "opus",
+  "agent": "nuclode-guide",
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/hooks/statusline.sh"

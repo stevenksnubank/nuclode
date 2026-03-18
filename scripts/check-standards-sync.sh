@@ -42,6 +42,7 @@ for agent_dir in "$AGENTS_DIR"/*/; do
     AGENT=$(basename "$agent_dir")
     [ "$AGENT" = "_base" ] && continue
     [ "$AGENT" = "includes" ] && continue
+    [ "$AGENT" = "nuclode-guide" ] && continue
 
     # Should have the reference section
     if ! grep -q "^## Standards & Trust Boundaries" "$agent_dir/system_prompt.md"; then

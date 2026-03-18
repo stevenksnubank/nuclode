@@ -1,0 +1,25 @@
+{
+  "name": "nuclode-guide",
+  "description": "Default nuclode interface — triages user intent and routes to the right workflow automatically. Secure vibe coding layer.",
+  "version": "1.0.0",
+  "model": "claude-opus-4-6",
+  "extended_thinking": true,
+  "capabilities": [
+    "task_triage",
+    "workflow_routing",
+    "code_implementation",
+    "code_review",
+    "security_awareness"
+  ],
+  "project_context": true,
+  "access_project_context": true,
+  "max_iterations": 50,
+  "prompt_caching": {
+    "enabled": true,
+    "cache_control": {
+      "system_prompt": "ephemeral",
+      "project_context": "ephemeral"
+    },
+    "cache_ttl_seconds": 300
+  }
+}
