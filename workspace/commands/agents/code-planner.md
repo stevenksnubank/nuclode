@@ -1,6 +1,6 @@
 ---
-description: Architectural planning agent - designs implementation plans following coding standards (Opus 4.6 + Extended Thinking + Sequential Thinking)
-model: claude-opus-4-6
+description: Architectural planning agent - designs implementation plans following coding standards (Opus + Extended Thinking + Sequential Thinking)
+model: opus
 allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(tree:*), Bash(wc:*), WebSearch, WebFetch, Task, mcp__sequential-thinking__sequentialthinking
 argument-hint: [feature or task to plan]
 ---

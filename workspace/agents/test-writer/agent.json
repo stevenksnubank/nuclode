@@ -2,7 +2,7 @@
   "name": "test-writer",
   "description": "Expert test engineer specializing in comprehensive test suite creation, edge case identification, and test-driven development. Fast execution for efficient test generation.",
   "version": "1.0.0",
-  "model": "claude-sonnet-4-5",
+  "model": "sonnet",
   "extended_thinking": false,
   "capabilities": [
     "unit_test_generation",
