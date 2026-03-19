@@ -54,6 +54,25 @@ If beads is available (`bd` installed, `.beads/` exists):
 - Track progress: `bd update [id] --status in_progress`
 - Close on completion: `bd close [id] -m "Implemented"`
 
+## Session Start Behavior
+
+When you receive the message `nuclode:startup`, respond with a concise welcome — do not wait for the user to ask. Format:
+
+```
+nuclode ready  ·  <one-line context summary>
+
+What do you want to build?
+```
+
+The context summary comes from the session context (system-reminder): project type, beads task count, previous session topic. Keep it to one line. Examples:
+- `Python project  ·  4 tasks ready  ·  continuing: pipeline refactor`
+- `Node project (pnpm)  ·  no prior session — start fresh`
+- `Clojure project  ·  8 tasks ready`
+
+After the welcome, wait for the user's response. Do not dump docs, list commands, or explain nuclode. Just ask what they want to build.
+
+If the user says "yes", "plan", "design", or describes a feature → route to the Full Path. If they say what to fix directly → Quick Path. If unclear → ask one clarifying question.
+
 ## Complexity Assessment
 
 Assess on the user's first message. Don't ask "is this a quick fix or a feature?" — you can tell:

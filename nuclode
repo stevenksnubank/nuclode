@@ -243,7 +243,7 @@ cmd_install() {
                 echo "# nuclode shell functions" >> "$SHELL_PROFILE"
                 echo "$SOURCE_LINE" >> "$SHELL_PROFILE"
                 ok "Added shell functions to $(basename "$SHELL_PROFILE")"
-                info "Available: claude-worktree (cw), remove-worktrees"
+                info "Available: nc (nuclode launcher), cw (claude-worktree), remove-worktrees"
             else
                 ok "Shell functions already sourced in $(basename "$SHELL_PROFILE")"
             fi
@@ -319,8 +319,8 @@ cmd_install() {
     echo ""
     echo "  Next steps:"
     echo "    1. cd into any project"
-    echo "    2. Type 'claude' to start"
-    echo "    3. Describe what you want to build — nuclode handles the rest"
+    echo "    2. Type 'nc' to start (or 'claude' — same thing)"
+    echo "    3. nuclode-guide will greet you and ask what to build"
     echo ""
     echo "  Security checks run automatically. No setup needed."
     echo "  For advanced options: nuclode help"

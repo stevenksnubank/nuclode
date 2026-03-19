@@ -1,4 +1,5 @@
 """SessionStart hook — project detection, beads context, previous session loading."""
+
 from __future__ import annotations
 
 import json
@@ -23,20 +24,18 @@ def run(input: dict) -> dict | None:
     _check_analysis_freshness(parts, project_dir)
     has_previous = _load_previous_session(parts, str(project_dir))
 
-    # Guide new users — no jargon, no slash commands
-    if not has_previous:
-        parts.append(
-            "Welcome! Just describe what you want to build or fix."
-        )
-
     if not parts:
         return None
+
+    context = "[nuclode] " + " ".join(parts)
 
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": "[nuclode] " + " ".join(parts),
-        }
+            "additionalContext": context,
+        },
+        # Trigger nuclode-guide to show a proactive welcome before the user types anything
+        "prompt": "nuclode:startup",
     }
 
 
@@ -71,7 +70,11 @@ def _check_beads(parts: list[str], project_dir: Path) -> None:
 
     try:
         result = subprocess.run(
-            ["bd", "ready"], capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+            ["bd", "ready"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=str(project_dir),
         )
         if result.returncode != 0:
             return
@@ -83,12 +86,20 @@ def _check_beads(parts: list[str], project_dir: Path) -> None:
     # Auto-inject currently claimed task details
     try:
         current_result = subprocess.run(
-            ["bd", "current"], capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+            ["bd", "current"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=str(project_dir),
         )
         if current_result.returncode == 0 and current_result.stdout.strip():
             task_id = current_result.stdout.strip().splitlines()[0].split()[0]
             show_result = subprocess.run(
-                ["bd", "show", task_id], capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+                ["bd", "show", task_id],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                cwd=str(project_dir),
             )
             if show_result.returncode == 0 and show_result.stdout.strip():
                 task_detail = show_result.stdout.strip()[:500]
@@ -111,7 +122,10 @@ def _check_analysis_freshness(parts: list[str], project_dir: Path) -> None:
 
         result = subprocess.run(
             ["git", "diff", "--name-only", f"{last_sha}..HEAD"],
-            capture_output=True, text=True, timeout=5, cwd=str(project_dir),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=str(project_dir),
         )
         changed = len([l for l in result.stdout.strip().splitlines() if l.strip()])
         if changed > 0:
@@ -139,7 +153,9 @@ def _load_previous_session(parts: list[str], current_cwd: str) -> bool:
         if prev_cwd == current_cwd and prev_summary:
             prev_task_id = session.get("beads_task_id", "")
             task_context = f", task: {prev_task_id}" if prev_task_id else ""
-            parts.append(f"Previous session ({prev_ts}, branch: {prev_branch}{task_context}): {prev_summary}")
+            parts.append(
+                f"Previous session ({prev_ts}, branch: {prev_branch}{task_context}): {prev_summary}"
+            )
             return True
     except (json.JSONDecodeError, OSError):
         pass

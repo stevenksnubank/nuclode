@@ -3,6 +3,15 @@
 # Add to your shell profile: source ~/dev/nuclode/shell/nuclode.sh
 # (setup.sh will add this automatically)
 
+# ─── nuclode launcher ────────────────────────────────────────────────
+
+# nc — launch nuclode (claude with nuclode workspace active)
+# Shows a brief banner then drops into claude. nuclode-guide greets you immediately.
+nc() {
+  printf "\033[2m  nuclode · secure vibe coding\033[0m\n\n"
+  claude "$@"
+}
+
 # ─── Git Worktree + Claude Code ──────────────────────────────────────
 
 # Create a worktree for the current branch and launch Claude in it

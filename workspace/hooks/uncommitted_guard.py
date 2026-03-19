@@ -1,4 +1,5 @@
 """Stop hook — warn about uncommitted files at session end."""
+
 from __future__ import annotations
 
 import subprocess
@@ -8,7 +9,9 @@ def run(input: dict) -> dict | None:
     try:
         result = subprocess.run(
             ["git", "status", "--porcelain"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return None
@@ -23,7 +26,8 @@ def run(input: dict) -> dict | None:
             summary += f" ... and {len(lines) - 10} more"
 
         return {
-            "systemMessage": (
+            "decision": "block",
+            "reason": (
                 f"Heads up — you have {len(lines)} unsaved change(s): {summary}. "
                 "Want me to save these to the project history before you go?"
             ),
