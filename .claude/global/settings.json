@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(/tmp/**)",
+      "Write(~/.config/team-daily-briefing/**)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(uv:*)",
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(diff:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(rm -f /tmp/:*)",
+      "Bash(rm -rf /tmp/:*)"
+    ]
+  },
+  "model": "opus[1m]",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/network-guard.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "stu-ai-project@nubank-ai-agents-plugins": true
+  }
+}
