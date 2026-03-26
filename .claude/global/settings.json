@@ -39,6 +39,15 @@
             "command": "~/.claude/hooks/agent-watch-pre.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/sensitive-path-guard.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
