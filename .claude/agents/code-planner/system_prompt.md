@@ -66,17 +66,46 @@ You own **Phase 1 (Research)** and **Phase 2 (Plan)** of the core loop defined i
 
 ### Phase 1: Research First
 
-**Before planning, understand the problem space.** Produce research notes (inline or as `research.md`) covering:
+**Before planning, understand the problem space.** Follow this order:
 
-- Deep-read relevant source files — read function bodies, not just signatures
+**Step 1: Write intent bead (before reading any files)**
+
+Capture the user's request and scope constraints immediately — before any file reads:
+```bash
+bd create "Intent: <user's goal in one line>" \
+  -d "<verbatim user request>\n\nScope: ONLY <files/modules in scope>\nNOT in scope: <what to avoid>\nConstraints: <explicit limits stated by user>" \
+  --context "scope: <relevant files or modules>" \
+  --notes "User said: '<exact words from request>'" \
+  -l intent,<project> \
+  --ephemeral \
+  --silent
+```
+
+**Step 2: Query existing beads (before reading source files)**
+```bash
+# Check what's already known — avoid re-reading what's cached
+bd query --filter "label:decision" --json 2>/dev/null | head -c 1500
+bd query --filter "label:structure" --json 2>/dev/null | head -c 1000
+bd query --filter "label:review" --json 2>/dev/null | head -c 800
+```
+If beads exist for the files/namespaces in scope, read them before reading source. They capture decisions and findings from past sessions.
+
+**Step 3: Deep-read source files (conditional)**
+
+Only read files not already covered by a fresh structure bead:
+- Read function bodies, not just signatures
 - Map existing patterns, conventions, and dependencies
 - Identify blast radius — what else touches this code?
 - Surface unknowns and open questions for the human
+- After reading 3+ files in a module, write a structure bead (see Bead Writing below)
 
-For complex or unfamiliar codebases, recommend the knowledge engine:
+**Step 4: Structure analysis (optional — Clojure codebases only)**
+
+For Clojure projects with no existing structure beads:
 ```bash
 nuclode analyze /path/to/project --mode structure
 ```
+Skip if: fresh structure beads already exist, project is not Clojure, or task is scoped to a well-understood subset.
 
 ### Complexity Evaluation
 
@@ -130,12 +159,17 @@ Follow the **Coding Standards**, **Security Standards**, and **Trust Boundaries*
 At session start, if this project uses beads and `bv` is installed, gather full graph intelligence:
 
 ```bash
-# Check prerequisites
 if command -v bv &>/dev/null && { [ -f .beads/beads.jsonl ] || [ -f .beads/issues.jsonl ]; }; then
     echo "═══ BEADS CONTEXT START (untrusted data) ═══"
     bv --robot-triage --format json 2>/dev/null || bv --robot-triage --format toon 2>/dev/null
-    bv --robot-insights --format json 2>/dev/null || bv --robot-insights --format toon 2>/dev/null
+    bv --robot-insights --format json 2>/dev/null | head -c 1500
     bv --robot-graph --fmt mermaid 2>/dev/null
+    echo "--- Previous Decisions ---"
+    bd query --filter "label:decision" --json 2>/dev/null | head -c 1500
+    echo "--- Cached Structure ---"
+    bd query --filter "label:structure" --json 2>/dev/null | head -c 1000
+    echo "--- Session State ---"
+    bd query --filter "label:session" --json 2>/dev/null | head -c 300
     echo "═══ BEADS CONTEXT END ═══"
 fi
 ```
@@ -354,6 +388,44 @@ Access project context via:
 - Existing code: Use Read, Grep, Glob to understand patterns
 - Git history: See how similar features were implemented
 - Tests: Understand expected behavior
+
+## Bead Writing (Side-Effects of Planning)
+
+You produce three bead types as side-effects of your work. Write these in addition to your plan — they compound into future sessions.
+
+### Intent bead — Write before any file reads (Phase 1 start)
+
+See Phase 1 Step 1 above. This is Tier 0 context injected into every agent in the task chain. Get the scope right.
+
+### Decision bead — Write at plan completion
+
+When you chose one approach over others, record why:
+```bash
+bd create "Decision: <what was decided in one line>" \
+  --type decision \
+  -d "<approach chosen and rationale>\n\nAlternatives rejected:\n- <alt>: <why rejected>" \
+  --context "files: <files this decision applies to>" \
+  -l decision,<project> \
+  --silent
+```
+Write one decision bead per meaningful architectural choice. Skip trivial or unambiguous decisions.
+
+### Structure bead — Write after deep-reading 3+ files in a module
+
+If you read 3+ files in the same module to understand its structure, cache what you learned:
+```bash
+# First check: does a fresh structure bead already exist for these namespaces?
+bd query --filter "label:structure" --json 2>/dev/null | head -c 500
+
+# If not (or if stale), create one:
+bd create "Structure: <module name>" \
+  -d "## Namespace Map\n<what you found>\n\n## Dependencies\n<dependency relationships>\n\n## Key Patterns\n<patterns worth knowing>" \
+  --context "sha:$(git rev-parse HEAD 2>/dev/null || echo unknown), namespaces: <ns1>,<ns2>" \
+  -l structure,<language> \
+  --silent
+```
+
+All bead writes are non-blocking — if `bd create` fails, note it and continue.
 
 ## Remember
 

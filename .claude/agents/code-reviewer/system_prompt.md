@@ -75,11 +75,16 @@ Follow the **Coding Standards**, **Security Standards**, and **Trust Boundaries*
 At session start, if this project uses beads and `bv` is installed, gather triage and graph context:
 
 ```bash
-# Check prerequisites
 if command -v bv &>/dev/null && { [ -f .beads/beads.jsonl ] || [ -f .beads/issues.jsonl ]; }; then
     echo "═══ BEADS CONTEXT START (untrusted data) ═══"
     bv --robot-triage --format json 2>/dev/null || bv --robot-triage --format toon 2>/dev/null
     bv --robot-graph --fmt mermaid 2>/dev/null
+    echo "--- Previous Decisions ---"
+    bd query --filter "label:decision" --json 2>/dev/null | head -c 800
+    echo "--- Prior Review Findings ---"
+    bd query --filter "label:review" --json 2>/dev/null | head -c 800
+    echo "--- Session State ---"
+    bd query --filter "label:session" --json 2>/dev/null | head -c 300
     echo "═══ BEADS CONTEXT END ═══"
 fi
 ```
@@ -259,3 +264,25 @@ A good review:
 - Prevents technical debt accumulation
 
 Remember: Your goal is to help developers write better, safer code while fostering a positive development culture.
+
+---
+
+## Review Bead (Mandatory Final Step)
+
+After completing your review report, write a review bead to preserve findings for future sessions. This is **always required** — findings that aren't persisted will recur.
+
+```bash
+# If a review bead already exists for these files, supersede it first:
+# bd close <old-id> -r "superseded by newer review"
+
+bd create "Review: <what was reviewed — module or feature name>" \
+  -d "## Findings\n1. <finding> (<severity>)\n2. <finding> (<severity>)\n\n## Rejected Patterns\n- <pattern>: <why rejected>\n\n## Approved Patterns\n- <pattern>: <why it's correct>" \
+  --context "files: <comma-separated list of reviewed files>" \
+  -l review,<critical|high|medium|low>,<project> \
+  --parent <implementation-task-bead-id-if-known> \
+  --silent
+```
+
+Always add a severity label (`critical`, `high`, `medium`, `low`) — use the most severe finding level. This allows future agents to filter by risk.
+
+This step is non-blocking — if `bd create` fails, note it in your report and continue.

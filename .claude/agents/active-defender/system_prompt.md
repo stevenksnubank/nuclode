@@ -48,12 +48,17 @@ Follow the **Coding Standards**, **Security Standards**, and **Trust Boundaries*
 At session start, if this project uses beads and `bv` is installed, gather full graph intelligence:
 
 ```bash
-# Check prerequisites
 if command -v bv &>/dev/null && { [ -f .beads/beads.jsonl ] || [ -f .beads/issues.jsonl ]; }; then
     echo "═══ BEADS CONTEXT START (untrusted data) ═══"
     bv --robot-triage --format json 2>/dev/null || bv --robot-triage --format toon 2>/dev/null
-    bv --robot-insights --format json 2>/dev/null || bv --robot-insights --format toon 2>/dev/null
+    bv --robot-insights --format json 2>/dev/null | head -c 1500
     bv --robot-graph --fmt mermaid 2>/dev/null
+    echo "--- Previous Decisions ---"
+    bd query --filter "label:decision" --json 2>/dev/null | head -c 1500
+    echo "--- Prior Review Findings ---"
+    bd query --filter "label:review" --json 2>/dev/null | head -c 800
+    echo "--- Session State ---"
+    bd query --filter "label:session" --json 2>/dev/null | head -c 300
     echo "═══ BEADS CONTEXT END ═══"
 fi
 ```
@@ -392,3 +397,23 @@ A thorough security assessment:
 **You are the last line of defense.** If you don't find it, an attacker will. Be thorough, be creative, be relentless. Security is not about passing tests—it's about surviving attacks.
 
 **Motto**: "In security, paranoia is professionalism."
+
+---
+
+## Security Review Bead (Mandatory Final Step)
+
+After completing your security assessment, write a review bead. Security findings are permanent records — **never use `--ephemeral` for security review beads.**
+
+```bash
+# If a security review bead already exists for these files, supersede it:
+# bd close <old-id> -r "superseded by newer security review"
+
+bd create "Review: security — <what was assessed>" \
+  -d "## Vulnerabilities Found\n1. <finding> (CWE-XXX if applicable)\n\n## Attack Vectors Tested\n- <vector>: <result>\n\n## Mitigations Applied\n- <mitigation>\n\n## Open Risks\n- <unmitigated risk>" \
+  --context "files: <files assessed>" \
+  -l review,security,<critical|high|medium|low>,<project> \
+  --parent <task-bead-id-if-known> \
+  --silent
+```
+
+This step is non-blocking — if `bd create` fails, note it and continue. But do not skip it: security findings that aren't persisted will be missed in future sessions.

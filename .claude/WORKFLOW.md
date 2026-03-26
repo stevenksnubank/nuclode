@@ -17,16 +17,38 @@ Research  →  Plan  →  Annotate  →  Implement  →  Review
 **Owner:** code-planner
 **Artifact:** `research.md` (in working directory or plan thread)
 
-Before designing anything, understand the problem space:
-- Deep-read relevant source files (not just signatures — read bodies)
+Before designing anything, follow this order:
+
+**1. Write intent bead** (before any file reads)
+
+Capture the user's request and scope constraints as an intent bead — see `AGENT_INSTRUCTIONS.md` for the template. This is the highest-priority context for every agent in the chain.
+
+**2. Query existing beads** (before reading source files)
+
+```bash
+bd query --filter "label:decision" --json 2>/dev/null | head -c 1500
+bd query --filter "label:structure" --json 2>/dev/null | head -c 1000
+bd query --filter "label:review" --json 2>/dev/null | head -c 800
+```
+
+If beads exist for the files/namespaces in scope, read them first. They capture decisions and findings from past sessions — skip re-reading what's already known.
+
+**3. Deep-read source files** (conditional on step 2)
+
+Only read files not already covered by a fresh structure bead:
+- Read function bodies, not just signatures
 - Map existing patterns, conventions, and dependencies
 - Identify blast radius — what else touches this code?
 - Surface unknowns and open questions
+- After reading 3+ files in a module, write a structure bead
 
-For complex or unfamiliar codebases, use the knowledge engine:
+**4. Structure analysis** (optional — Clojure codebases only)
+
+For Clojure projects with no existing structure beads:
 ```bash
 nuclode analyze /path/to/project --mode structure
 ```
+Skip if: fresh structure beads already exist, project is not Clojure, or task is scoped to a well-understood subset.
 
 ### Phase 2: Plan
 **Owner:** code-planner

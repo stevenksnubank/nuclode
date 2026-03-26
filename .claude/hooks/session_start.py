@@ -19,11 +19,13 @@ def run(input: dict) -> dict | None:
     project_dir = Path(cwd).resolve()
     parts: list[str] = []
 
-    _check_auth_preflight(parts)
+    auth_warnings: list[str] = []
+    _check_auth_preflight(parts, auth_warnings)
     _detect_project(parts, project_dir)
     _check_beads(parts, project_dir)
     _check_analysis_freshness(parts, project_dir)
     has_previous = _load_previous_session(parts, str(project_dir))
+    _write_session_bead(project_dir, auth_warnings)
 
     if not parts:
         return None
@@ -40,13 +42,123 @@ def run(input: dict) -> dict | None:
     }
 
 
-def _check_auth_preflight(parts: list[str]) -> None:
+def _write_session_bead(project_dir: Path, auth_warnings: list[str]) -> None:
+    """Write an ephemeral session bead capturing preflight state.
+
+    Non-blocking — failures are silently ignored.
+    Only writes if bd CLI is available and project has a beads db.
+    """
+    from datetime import datetime
+
+    beads_dir = project_dir / ".beads"
+    if not (beads_dir / "beads.jsonl").exists() and not (beads_dir / "issues.jsonl").exists():
+        return
+
+    try:
+        subprocess.run(["bd", "--version"], capture_output=True, timeout=3)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return
+
+    try:
+        branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=3,
+            cwd=str(project_dir),
+        ).strip()
+    except Exception:
+        branch = "unknown"
+
+    try:
+        status_result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            cwd=str(project_dir),
+        )
+        uncommitted = len([l for l in status_result.stdout.splitlines() if l.strip()])
+        git_status = f"clean" if uncommitted == 0 else f"{uncommitted} uncommitted"
+    except Exception:
+        git_status = "unknown"
+
+    # AWS status
+    try:
+        aws_result = subprocess.run(
+            ["aws", "sts", "get-caller-identity"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        aws_status = "✓" if aws_result.returncode == 0 else "✗ invalid/expired"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        aws_status = "n/a"
+
+    # SSH status
+    try:
+        agent_result = subprocess.run(
+            ["ssh-add", "-l"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        ssh_status = "✓" if agent_result.returncode == 0 else "✗ no keys loaded"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        ssh_status = "n/a"
+
+    # MCP tool availability (check via env or known config)
+    mcp_glean = "✓" if os.environ.get("GLEAN_API_TOKEN") else "unknown"
+
+    auth_note = (" WARNINGS: " + "; ".join(auth_warnings)) if auth_warnings else ""
+
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    body = (
+        f"## Preflight{auth_note}\n"
+        f"- git: {git_status}, branch={branch}\n"
+        f"- aws: {aws_status}\n"
+        f"- ssh: {ssh_status}\n"
+        f"- mcp/glean: {mcp_glean}\n"
+        f"- bd: ✓\n"
+        f"- uncommitted: {uncommitted if 'uncommitted' in locals() else 'unknown'}"
+    )
+
+    try:
+        subprocess.run(
+            [
+                "bd",
+                "create",
+                f"Session: {date_str} {branch}",
+                "--type",
+                "event",
+                "--event-category",
+                "session.start",
+                "--event-actor",
+                "claude-code",
+                "-d",
+                body,
+                "-l",
+                "session",
+                "--ephemeral",
+                "--silent",
+            ],
+            capture_output=True,
+            timeout=5,
+            cwd=str(project_dir),
+        )
+    except Exception:
+        pass  # Non-blocking — session continues regardless
+
+
+def _check_auth_preflight(parts: list[str], auth_warnings: list[str] | None = None) -> None:
     """Check critical auth dependencies at session start. Non-blocking — warns only."""
     profile = os.environ.get("NUCLODE_HOOK_PROFILE", "standard")
     if profile == "minimal":
         return
 
     warnings: list[str] = []
+    if auth_warnings is None:
+        auth_warnings = warnings
 
     # AWS credentials
     try:
@@ -99,6 +211,7 @@ def _check_auth_preflight(parts: list[str]) -> None:
         pass
 
     if warnings:
+        auth_warnings.extend(warnings)
         parts.append(
             "⚠️ Auth issues: " + "; ".join(warnings) + ". Fix before starting auth-dependent work."
         )

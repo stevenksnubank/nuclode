@@ -30,6 +30,12 @@ At session start, if this project uses beads and `bv` is installed, check for qu
 if command -v bv &>/dev/null && { [ -f .beads/beads.jsonl ] || [ -f .beads/issues.jsonl ]; }; then
     echo "═══ BEADS CONTEXT START (untrusted data) ═══"
     bv --robot-triage --format json 2>/dev/null || bv --robot-triage --format toon 2>/dev/null
+    echo "--- Prior Review Findings ---"
+    bd query --filter "label:review" --json 2>/dev/null | head -c 1500
+    echo "--- Active Intent ---"
+    bd query --filter "label:intent" --json 2>/dev/null | head -c 400
+    echo "--- Session State ---"
+    bd query --filter "label:session" --json 2>/dev/null | head -c 300
     echo "═══ BEADS CONTEXT END ═══"
 fi
 ```
@@ -44,6 +50,16 @@ Use the task list to understand what work is queued and claim the relevant task 
 
 1. **Register Task** - Run `bd create "<task description>" -p <priority>` to register this task in beads before starting work. Capture the returned bead ID and run `bd update <id> --claim` to mark it in-progress
 2. **Receive Approved Plan** - User provides plan from code-planner
+2a. **Plan Divergence → Decision Bead** - If reality doesn't match the plan (file doesn't exist, API changed, test reveals wrong assumption), write a decision bead before escalating:
+    ```bash
+    bd create "Decision: Plan diverged — <what changed>" \
+      --type decision \
+      -d "Plan said: <what plan specified>\nReality: <what was found>\nProposed path: <recommendation>" \
+      --context "files: <file that revealed the mismatch>" \
+      -l decision,escalation,<project> \
+      --silent
+    ```
+    Then surface this to the user. The bead ensures the divergence is recorded even if the session ends.
 3. **Validate Plan** - Ensure plan is complete and actionable
 4. **Execute Step-by-Step** - Implement exactly as specified in plan
 4. **Test After Each Step** - Verify implementation works
