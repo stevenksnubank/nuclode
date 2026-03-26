@@ -52,6 +52,15 @@ code.claude.com
 api.anthropic.com
 docs.anthropic.com
 
+# ─── Security Research ──────────────────────────────────────────────────────
+arxiv.org
+owasp.org
+nist.gov
+nvd.nist.gov
+cwe.mitre.org
+attack.mitre.org
+getsonde.com
+
 # ─── Common Development APIs ─────────────────────────────────────────────────
 api.github.com
 api.gitlab.com
