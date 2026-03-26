@@ -28,42 +28,12 @@
         ]
       },
       {
-        "matcher": "Edit|Write",
+        "matcher": "Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:suggest-compact suggest_compact strict",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:secrets-scan secrets_scan standard,strict",
+            "command": "python3 ~/.claude/hooks/pre_tool_use.py",
             "timeout": 10000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:sast-gate sast_gate standard,strict",
-            "timeout": 10000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py pre:pages-guard pages_guard standard,strict",
-            "timeout": 5000
           }
         ]
       }
@@ -74,18 +44,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py post:edit:format post_edit_format standard,strict",
+            "command": "python3 ~/.claude/hooks/post_tool_use.py",
             "timeout": 10000
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py post:console-warn console_warn standard,strict",
-            "timeout": 5000
           }
         ]
       },
@@ -97,16 +57,6 @@
             "command": "python3 ~/.claude/hooks/run_with_profile.py post:quality-gate quality_gate standard,strict",
             "timeout": 30000,
             "async": true
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/run_with_profile.py post:sast-scan sast_scan standard,strict",
-            "timeout": 5000
           }
         ]
       }

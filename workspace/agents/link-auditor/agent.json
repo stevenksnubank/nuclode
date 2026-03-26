@@ -1,0 +1,25 @@
+{
+  "name": "link-auditor",
+  "description": "Audits research documents for link quality — imprecise code links, missing first-mention links, unlinked table cells, missing VPN markers, and noisy display text.",
+  "version": "1.0.0",
+  "model": "sonnet",
+  "extended_thinking": false,
+  "capabilities": [
+    "document_analysis",
+    "link_verification"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "project_context": true,
+  "max_iterations": 10,
+  "output_format": "audit_report",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": false,
+    "read_only": true,
+    "auto_invoke_agents": false
+  }
+}

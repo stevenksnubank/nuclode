@@ -4,6 +4,8 @@ This directory contains your global AI agents for specialized development tasks.
 
 ## Available Agents
 
+### Development Agents
+
 | Agent | Command | Model | Purpose |
 |-------|---------|-------|---------|
 | **nuclode Guide** | default / `/agents:nuclode-guide` | Sonnet (latest) | Triage, routing, quick fixes |
@@ -12,6 +14,17 @@ This directory contains your global AI agents for specialized development tasks.
 | **Code Reviewer** | `/agents:code-reviewer` | Opus (latest) + Thinking | Code review, quality analysis |
 | **Active Defender** | `/agents:active-defender` | Opus (latest) + Thinking | Offensive security testing |
 | **Test Writer** | `/agents:test-writer` | Sonnet (latest) | Generate comprehensive tests |
+
+### Research & Quality Agents
+
+| Agent | Command | Model | Purpose |
+|-------|---------|-------|---------|
+| **Research Analyst** | `/agents:research-analyst` | Opus (latest) + Thinking | Deep research with structured output |
+| **Claims Auditor** | `/agents:claims-auditor` | Opus (latest) + Thinking | Audit docs for untestable claims |
+| **Link Auditor** | `/agents:link-auditor` | Sonnet (latest) | Audit link quality in documents |
+| **Glossary Reviewer** | `/agents:glossary-reviewer` | Opus (latest) + Thinking | Review definition quality |
+| **Cause Check** | `/agents:cause-check` | Sonnet (latest) | Audit causal language precision |
+| **Claude Perf** | `/agents:claude-perf` | Sonnet (latest) | Analyze session performance & costs |
 
 ## Model Strategy
 
@@ -23,6 +36,10 @@ This directory contains your global AI agents for specialized development tasks.
 | Security | Opus (latest) | Enabled | Critical assessment, exploit chaining |
 | Implementation | Sonnet (latest) | Disabled | Fast execution from approved plans |
 | Test Writing | Sonnet (latest) | Disabled | Efficient pattern-based generation |
+| Research | Opus (latest) | Enabled | Deep analysis, source synthesis |
+| Claims/Glossary audit | Opus (latest) | Enabled | Precise reasoning about language |
+| Link/Cause audit | Sonnet (latest) | Disabled | Pattern matching, fast turnaround |
+| Performance analysis | Sonnet (latest) | Disabled | Data parsing, fast aggregation |
 
 **Models use family aliases** (`"opus"`, `"sonnet"`) in agent.json — these auto-resolve to the latest version. When Opus 4.7 or Sonnet 4.7 ships, all agents upgrade automatically.
 

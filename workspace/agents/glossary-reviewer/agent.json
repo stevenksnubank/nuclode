@@ -1,0 +1,25 @@
+{
+  "name": "glossary-reviewer",
+  "description": "Reviews glossary definitions for quality — testability, substitutability, source citations, and precise language.",
+  "version": "1.0.0",
+  "model": "opus",
+  "extended_thinking": true,
+  "capabilities": [
+    "document_analysis",
+    "definition_quality"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "project_context": true,
+  "max_iterations": 10,
+  "output_format": "audit_report",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": false,
+    "read_only": true,
+    "auto_invoke_agents": false
+  }
+}

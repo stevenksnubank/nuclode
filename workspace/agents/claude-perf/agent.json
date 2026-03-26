@@ -1,0 +1,28 @@
+{
+  "name": "claude-perf",
+  "description": "Analyzes Claude Code session JSONL logs to extract token usage, tool timing, errors, cost, and subagent breakdowns.",
+  "version": "1.0.0",
+  "model": "sonnet",
+  "extended_thinking": false,
+  "capabilities": [
+    "log_analysis",
+    "performance_metrics",
+    "cost_calculation"
+  ],
+  "tools": [
+    "Read",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash"
+  ],
+  "project_context": false,
+  "max_iterations": 20,
+  "output_format": "performance_report",
+  "workflow": {
+    "mode": "autonomous",
+    "requires_user_approval": false,
+    "read_only": false,
+    "auto_invoke_agents": false
+  }
+}

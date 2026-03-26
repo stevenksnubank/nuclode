@@ -1,0 +1,26 @@
+{
+  "name": "claims-auditor",
+  "description": "Audits research documents for untestable or unmeasurable claims. Use proactively after writing or editing research documents.",
+  "version": "1.0.0",
+  "model": "opus",
+  "extended_thinking": true,
+  "capabilities": [
+    "document_analysis",
+    "claim_verification",
+    "writing_quality"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "project_context": true,
+  "max_iterations": 10,
+  "output_format": "audit_report",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": false,
+    "read_only": true,
+    "auto_invoke_agents": false
+  }
+}

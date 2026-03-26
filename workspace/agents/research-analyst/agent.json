@@ -1,0 +1,31 @@
+{
+  "name": "research-analyst",
+  "description": "Investigates codebases, reviews documents, and ranks problems for research projects. Applies analytical frameworks for rigorous research output.",
+  "version": "1.0.0",
+  "model": "opus",
+  "extended_thinking": true,
+  "capabilities": [
+    "code_analysis",
+    "document_analysis",
+    "research",
+    "problem_ranking"
+  ],
+  "tools": [
+    "Read",
+    "Write",
+    "Glob",
+    "Grep",
+    "WebSearch",
+    "WebFetch",
+    "Bash(git:*)"
+  ],
+  "project_context": true,
+  "max_iterations": 30,
+  "output_format": "research_document",
+  "workflow": {
+    "mode": "autonomous",
+    "requires_user_approval": false,
+    "read_only": false,
+    "auto_invoke_agents": false
+  }
+}

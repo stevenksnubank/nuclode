@@ -1,0 +1,25 @@
+{
+  "name": "cause-check",
+  "description": "Audits research documents for imprecise cause-and-effect language — too-narrow verbs, wrong direction, weak directionality.",
+  "version": "1.0.0",
+  "model": "sonnet",
+  "extended_thinking": false,
+  "capabilities": [
+    "document_analysis",
+    "causal_reasoning"
+  ],
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "project_context": true,
+  "max_iterations": 10,
+  "output_format": "audit_report",
+  "workflow": {
+    "mode": "approval_based",
+    "requires_user_approval": false,
+    "read_only": true,
+    "auto_invoke_agents": false
+  }
+}
