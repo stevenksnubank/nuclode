@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Write(/tmp/**)",
+      "Write(/Users/steven.kumarsingh/dev/nuclode/**)",
       "Write(~/.config/team-daily-briefing/**)",
       "Bash(git:*)",
       "Bash(gh:*)",
