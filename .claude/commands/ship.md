@@ -8,10 +8,11 @@ Stage all current changes, create a well-formed commit, and push. One command to
 
 ## Steps
 
-1. **Find changes**: Run `git status` (never use `-uall`) and `git diff` (both staged and unstaged) to understand what changed. Also run `git log --oneline -5` to match the repository's commit message style. Find the conversation ID for the commit trailer:
+1. **Find changes**: Run `git status` (never use `-uall`) and `git diff` (both staged and unstaged) to understand what changed. Also run `git log --oneline -5` to match the repository's commit message style. Find the conversation ID and capture the pre-push unpushed commit count:
    ```
    PROJ_DIR="$HOME/.claude/projects/$(echo "$PWD" | tr '/.' '-')"
    SESSION_ID=$(basename "$(ls -t "$PROJ_DIR"/*.jsonl 2>/dev/null | head -1)" .jsonl 2>/dev/null)
+   UNPUSHED_BEFORE=$(git log --oneline @{u}..HEAD 2>/dev/null | wc -l | tr -d ' ')
    ```
 
 2. **Stage changes**: Stage modified and new files relevant to the current work. Use `git add -u` by default to avoid accidentally staging untracked files that aren't part of the work. If there are new files that are clearly part of the work (e.g., files just created in this session), stage those explicitly by name. Never stage `.env`, credentials, or other sensitive files.
@@ -25,7 +26,7 @@ Stage all current changes, create a well-formed commit, and push. One command to
 
 6. **Report**: Show the commit hash and a one-line summary of what was committed.
 
-7. **Nudge (occasionally)**: If there were already 3+ unpushed commits before this one (check with `git log --oneline @{u}..HEAD 2>/dev/null | wc -l`), mention the count. Skip this if the upstream is not set.
+7. **Nudge (occasionally)**: If `$UNPUSHED_BEFORE` was 3 or more before this push, mention that count to the user. Use the value captured in step 1 — never re-run the check after pushing (it will always be 0). Skip if upstream is not set.
 
 ## Important
 
