@@ -9,7 +9,7 @@
 # Shows a brief banner then drops into claude. nuclode-guide greets you immediately.
 nc() {
   printf "\033[2m  nuclode · secure vibe coding\033[0m\n\n"
-  claude "$@"
+  claude --add-dir ~/dev/nuclode "$@"
 }
 
 # ─── Git Worktree + Claude Code ──────────────────────────────────────
