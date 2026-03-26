@@ -416,4 +416,4 @@ bd create "Review: security — <what was assessed>" \
   --silent
 ```
 
-This step is non-blocking — if `bd create` fails, note it and continue. But do not skip it: security findings that aren't persisted will be missed in future sessions.
+> **⛔ REQUIRED GATE:** Security findings are permanent records. Run the `bd create` command above before delivering your assessment. If it returns non-zero, **STOP** and report the error — do not mark the security review complete until the write is confirmed or explicitly reported as failed. Security vulnerabilities that aren't persisted will be invisible in future sessions and will be exploited.

@@ -81,6 +81,8 @@ bd create "Intent: <user's goal in one line>" \
   --silent
 ```
 
+> **⛔ REQUIRED GATE:** Do not proceed to Step 2 until this command succeeds. If `bd create` returns non-zero or `bd` is not installed, **STOP** and report the error. The intent bead anchors every downstream agent — proceeding without it means the chain runs without scope context.
+
 **Step 2: Query existing beads (before reading source files)**
 ```bash
 # Check what's already known — avoid re-reading what's cached
@@ -410,6 +412,8 @@ bd create "Decision: <what was decided in one line>" \
 ```
 Write one decision bead per meaningful architectural choice. Skip trivial or unambiguous decisions.
 
+> **⛔ REQUIRED GATE:** At least one decision bead must be written before you present the plan for approval. If `bd create` returns non-zero, **STOP** and report the error — do not hand off the plan until the decision is recorded. If there are genuinely no meaningful architectural choices (trivial single-file fix), note that explicitly in the plan instead.
+
 ### Structure bead — Write after deep-reading 3+ files in a module
 
 If you read 3+ files in the same module to understand its structure, cache what you learned:
@@ -425,7 +429,7 @@ bd create "Structure: <module name>" \
   --silent
 ```
 
-All bead writes are non-blocking — if `bd create` fails, note it and continue.
+Structure beads are non-blocking — if `bd create` fails, note it and continue. (Structure beads are a cache; the intent and decision beads are the hard gates.)
 
 ## Remember
 

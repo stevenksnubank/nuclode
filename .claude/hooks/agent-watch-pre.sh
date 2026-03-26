@@ -38,13 +38,35 @@ esac
 
 START_TIME="$(date +%s)"
 
-# Write state file
+# Snapshot bead counts for phases that have required bead writes.
+# Stored in state file so post-hook can diff and warn if nothing was written.
+BEAD_SNAPSHOT_INTENT=0
+BEAD_SNAPSHOT_DECISION=0
+BEAD_SNAPSHOT_REVIEW=0
+
+if command -v bd &>/dev/null; then
+    case "$PHASE" in
+        planning)
+            BEAD_SNAPSHOT_INTENT="$(bd query --filter "label:intent"  2>/dev/null | grep -c . || echo 0)"
+            BEAD_SNAPSHOT_DECISION="$(bd query --filter "label:decision" 2>/dev/null | grep -c . || echo 0)"
+            ;;
+        reviewing|"security review")
+            BEAD_SNAPSHOT_REVIEW="$(bd query --filter "label:review" 2>/dev/null | grep -c . || echo 0)"
+            ;;
+    esac
+fi
+
+# Write state file (includes bead snapshot for post-hook diffing)
 jq -n \
   --arg key "$KEY" \
   --arg name "$DESCRIPTION" \
   --arg phase "$PHASE" \
   --argjson start_time "$START_TIME" \
-  '{key: $key, name: $name, phase: $phase, status: "active", start_time: $start_time}' \
+  --argjson snap_intent "$BEAD_SNAPSHOT_INTENT" \
+  --argjson snap_decision "$BEAD_SNAPSHOT_DECISION" \
+  --argjson snap_review "$BEAD_SNAPSHOT_REVIEW" \
+  '{key: $key, name: $name, phase: $phase, status: "active", start_time: $start_time,
+    bead_snapshot: {intent: $snap_intent, decision: $snap_decision, review: $snap_review}}' \
   > "$AGENTS_DIR/$KEY.json"
 
 # Write activity file

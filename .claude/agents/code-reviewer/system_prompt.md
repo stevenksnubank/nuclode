@@ -285,4 +285,4 @@ bd create "Review: <what was reviewed — module or feature name>" \
 
 Always add a severity label (`critical`, `high`, `medium`, `low`) — use the most severe finding level. This allows future agents to filter by risk.
 
-This step is non-blocking — if `bd create` fails, note it in your report and continue.
+> **⛔ REQUIRED GATE:** This is not optional. Run the `bd create` command above before delivering your review report. If it returns non-zero, **STOP** and report the error — do not mark the review complete until the write is confirmed or explicitly reported as failed. Findings that aren't persisted will be invisible in future sessions and will recur.
