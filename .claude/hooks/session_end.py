@@ -1,4 +1,5 @@
 """Stop hook — persist session metadata for next session's context injection."""
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,9 @@ def run(input: dict) -> dict | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         branch = result.stdout.strip() if result.returncode == 0 else "none"
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -45,7 +48,9 @@ def run(input: dict) -> dict | None:
         try:
             result = subprocess.run(
                 ["git", "diff", "--name-only", ".beads/"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             beads_dirty = len([l for l in result.stdout.strip().splitlines() if l.strip()])
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -56,7 +61,10 @@ def run(input: dict) -> dict | None:
     if Path(".beads").is_dir():
         try:
             result = subprocess.run(
-                ["bd", "current"], capture_output=True, text=True, timeout=5,
+                ["bd", "current"],
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0 and result.stdout.strip():
                 beads_task_id = result.stdout.strip().splitlines()[0].split()[0]
@@ -83,6 +91,9 @@ def run(input: dict) -> dict | None:
         "beads_task_id": beads_task_id,
         "transcript_bytes": transcript_bytes,
     }
+
+    # Clear live activity so watcher shows idle state
+    _clear_activity()
 
     # Atomic write: write to temp, then rename (POSIX atomic)
     _atomic_write(sessions_dir / "latest.json", json.dumps(session_data, indent=2))
@@ -111,6 +122,23 @@ def _atomic_write(path: Path, content: str) -> None:
         except OSError:
             pass
         raise
+
+
+def _clear_activity() -> None:
+    """Clear per-agent activity files so watcher shows idle state."""
+    agents_dir = Path.home() / ".claude" / "sessions" / "agents"
+    last_skill = Path.home() / ".claude" / "sessions" / "last-skill.txt"
+    try:
+        if agents_dir.exists():
+            for f in agents_dir.glob("*.json"):
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+        if last_skill.exists():
+            last_skill.unlink()
+    except OSError:
+        pass
 
 
 def _trim_file(path: Path, max_lines: int) -> None:

@@ -24,8 +24,80 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import date
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Activity tracking — writes per-agent activity for live dashboard
+# ---------------------------------------------------------------------------
+
+_AGENTS_DIR = Path.home() / ".claude" / "sessions" / "agents"
+_LAST_SKILL_FILE = Path.home() / ".claude" / "sessions" / "last-skill.txt"
+
+_SKILL_DIRS = {".claude/commands", ".claude/skills"}
+
+
+def _write_activity(input_data: dict, tool_name: str, tool_input: dict) -> None:
+    """Write current tool activity to per-agent activity file. Best-effort, never blocks."""
+    try:
+        session_id = input_data.get("session_id", "")
+        if not session_id:
+            return
+
+        _AGENTS_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Summarise what the tool is doing
+        summary = _summarise_tool(tool_name, tool_input)
+        skill = _detect_skill(tool_name, tool_input)
+
+        activity = {
+            "tool": tool_name,
+            "summary": summary,
+            "skill": skill,
+            "timestamp": time.time(),
+        }
+
+        activity_file = _AGENTS_DIR / f"{session_id}-activity.json"
+        activity_file.write_text(json.dumps(activity), encoding="utf-8")
+
+        if skill:
+            _LAST_SKILL_FILE.write_text(skill, encoding="utf-8")
+
+    except Exception:
+        pass
+
+
+def _summarise_tool(tool_name: str, tool_input: dict) -> str:
+    """Return a short human-readable summary of what the tool is doing."""
+    if tool_name == "Bash":
+        cmd = tool_input.get("command", "")
+        # Trim to first meaningful token + arg
+        parts = cmd.strip().split()
+        return " ".join(parts[:4])[:60] if parts else "bash"
+    if tool_name in ("Edit", "Write", "Read"):
+        path = tool_input.get("file_path", tool_input.get("path", ""))
+        return Path(path).name if path else tool_name.lower()
+    if tool_name == "Glob":
+        return tool_input.get("pattern", "glob")[:40]
+    if tool_name == "Grep":
+        return f"grep: {tool_input.get('pattern', '')[:30]}"
+    if tool_name == "Agent":
+        return f"spawn: {tool_input.get('description', 'subagent')[:40]}"
+    return tool_name.lower()
+
+
+def _detect_skill(tool_name: str, tool_input: dict) -> str:
+    """Return skill name if this tool call is Claude reading a skill/command file."""
+    if tool_name != "Read":
+        return ""
+    path = tool_input.get("file_path", "")
+    for skill_dir in _SKILL_DIRS:
+        if skill_dir in path and path.endswith(".md"):
+            name = Path(path).stem
+            return name
+    return ""
+
 
 # ---------------------------------------------------------------------------
 # Shared infrastructure
@@ -561,6 +633,9 @@ def main() -> None:
     tool_name = input_data.get("tool_name", "")
     tool_input = input_data.get("tool_input", {})
     command = tool_input.get("command", "") if tool_name == "Bash" else ""
+
+    # Always write activity (non-blocking, best-effort)
+    _write_activity(input_data, tool_name, tool_input)
 
     # --- Blocking checks (first block wins) ---
 
