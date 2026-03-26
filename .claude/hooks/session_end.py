@@ -116,7 +116,10 @@ def _atomic_write(path: Path, content: str) -> None:
         os.close(fd)
         os.rename(tmp, str(path))
     except Exception:
-        os.close(fd) if not os.get_inheritable(fd) else None
+        try:
+            os.close(fd)
+        except OSError:
+            pass
         try:
             os.unlink(tmp)
         except OSError:

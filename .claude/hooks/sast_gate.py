@@ -1,3 +1,6 @@
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in pre_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 """PreToolUse hook — BLOCK git commits containing HIGH severity security issues.
 
 Tier 1 (BLOCKING): SQL injection, eval(), innerHTML XSS, shell=True, os.system(),
@@ -9,6 +12,7 @@ system() in Ruby, insecure tempfile. These need judgment.
 Tier 3 (GUIDANCE via nuclode-guide agent): Missing input validation, auth checks,
 test coverage. These are enforced through workflow, not hooks.
 """
+
 from __future__ import annotations
 
 import re
@@ -17,7 +21,10 @@ from pathlib import Path
 
 # Import shared patterns
 import importlib.util as _ilu
-_spec = _ilu.spec_from_file_location("sast_patterns", str(Path(__file__).parent / "sast_patterns.py"))
+
+_spec = _ilu.spec_from_file_location(
+    "sast_patterns", str(Path(__file__).parent / "sast_patterns.py")
+)
 _mod = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
 _PATTERNS = _mod.PATTERNS
@@ -38,8 +45,14 @@ def run(input: dict) -> dict | None:
 
     try:
         from hook_telemetry import log_event
+
         if findings:
-            log_event("sast_gate", "block", {"findings_count": len(findings), "findings": findings[:5]}, blocked=True)
+            log_event(
+                "sast_gate",
+                "block",
+                {"findings_count": len(findings), "findings": findings[:5]},
+                blocked=True,
+            )
         else:
             log_event("sast_gate", "pass")
     except Exception:
@@ -59,7 +72,7 @@ def run(input: dict) -> dict | None:
             "permissionDecisionReason": (
                 f"I caught {len(findings)} security issue(s) in staged files that need attention:\n"
                 f"{details}\n\n"
-                "This is a common pattern to catch — just say \"fix the security issues\" and I'll rewrite the code safely."
+                'This is a common pattern to catch — just say "fix the security issues" and I\'ll rewrite the code safely.'
             ),
         }
     }
@@ -72,7 +85,9 @@ def _scan_staged_files() -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return []
@@ -100,7 +115,9 @@ def _scan_staged_files() -> list[str]:
         try:
             result = subprocess.run(
                 ["git", "show", f":{file_path}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 continue

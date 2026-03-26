@@ -1,3 +1,6 @@
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in pre_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 """PreToolUse hook — BLOCK GitHub Pages publishing from personal repos.
 
 Prevents accidental publication of confidential material via GitHub Pages.

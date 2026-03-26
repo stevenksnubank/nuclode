@@ -1,4 +1,8 @@
 """PostToolUse hook — auto-format edited files based on language/project tooling."""
+
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in post_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 from __future__ import annotations
 
 import subprocess

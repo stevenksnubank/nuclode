@@ -1,8 +1,12 @@
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in post_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 """PostToolUse hook — scan edited files for security anti-patterns. Advisory.
 
 Shows warnings to the user via systemMessage for any findings.
 HIGH severity findings are also blocked at commit time by sast_gate.py.
 """
+
 from __future__ import annotations
 
 import re
@@ -10,7 +14,10 @@ from pathlib import Path
 
 # Import shared patterns (co-located in hooks/)
 import importlib.util as _ilu
-_spec = _ilu.spec_from_file_location("sast_patterns", str(Path(__file__).parent / "sast_patterns.py"))
+
+_spec = _ilu.spec_from_file_location(
+    "sast_patterns", str(Path(__file__).parent / "sast_patterns.py")
+)
 _mod = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
 _PATTERNS = _mod.PATTERNS
@@ -29,8 +36,11 @@ def run(input: dict) -> dict | None:
     findings = _scan_file(file_path, patterns)
     try:
         from hook_telemetry import log_event
+
         if findings:
-            log_event("sast_scan", "warn", {"file": Path(file_path).name, "findings_count": len(findings)})
+            log_event(
+                "sast_scan", "warn", {"file": Path(file_path).name, "findings_count": len(findings)}
+            )
     except Exception:
         pass
 
@@ -50,7 +60,7 @@ def run(input: dict) -> dict | None:
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
             "additionalContext": claude_context,
-        }
+        },
     }
 
 
@@ -65,7 +75,7 @@ def _scan_file(file_path: str, patterns: list[tuple[str, str, str, str]]) -> lis
     for name, pattern, severity, suggestion in patterns:
         matches = list(re.finditer(pattern, content))
         if matches:
-            line_num = content[:matches[0].start()].count("\n") + 1
+            line_num = content[: matches[0].start()].count("\n") + 1
             findings.append(f"{severity}: {name} at L{line_num} — {suggestion}")
 
     return findings

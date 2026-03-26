@@ -1,4 +1,8 @@
 """PreToolUse hook — scan for secrets in staged files before git commit. BLOCKING."""
+
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in pre_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 from __future__ import annotations
 
 import re
@@ -9,22 +13,56 @@ from pathlib import Path
 # Each tuple: (name, regex pattern, description)
 _SECRET_PATTERNS: list[tuple[str, str, str]] = [
     ("AWS Access Key", r"AKIA[0-9A-Z]{16}", "AWS access key ID"),
-    ("AWS Secret Key", r"(?i)aws_secret_access_key\s*[=:]\s*['\"]?[A-Za-z0-9/+=]{40}", "AWS secret access key"),
+    (
+        "AWS Secret Key",
+        r"(?i)aws_secret_access_key\s*[=:]\s*['\"]?[A-Za-z0-9/+=]{40}",
+        "AWS secret access key",
+    ),
     ("GitHub Token", r"gh[pousr]_[A-Za-z0-9_]{36,}", "GitHub personal access token"),
     ("GitLab Token", r"glpat-[A-Za-z0-9\-_]{20,}", "GitLab personal access token"),
     ("Slack Token", r"xox[bpors]-[A-Za-z0-9\-]{10,}", "Slack API token"),
     ("Stripe Key", r"sk_live_[A-Za-z0-9]{20,}", "Stripe secret key"),
     ("Stripe Publishable", r"pk_live_[A-Za-z0-9]{20,}", "Stripe publishable key (live)"),
-    ("Generic API Key", r"(?i)(api[_-]?key|apikey)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{20,}['\"]?", "Possible API key assignment"),
-    ("Generic Secret", r"(?i)(secret|password|passwd|token)\s*[=:]\s*['\"][^'\"]{8,}['\"]", "Possible hardcoded secret"),
+    (
+        "Generic API Key",
+        r"(?i)(api[_-]?key|apikey)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{20,}['\"]?",
+        "Possible API key assignment",
+    ),
+    (
+        "Generic Secret",
+        r"(?i)(secret|password|passwd|token)\s*[=:]\s*['\"][^'\"]{8,}['\"]",
+        "Possible hardcoded secret",
+    ),
     ("Private Key", r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----", "Private key in file"),
-    ("Heroku API Key", r"(?i)heroku.*[=:]\s*['\"]?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "Heroku API key"),
+    (
+        "Heroku API Key",
+        r"(?i)heroku.*[=:]\s*['\"]?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        "Heroku API key",
+    ),
     ("Generic Bearer Token", r"(?i)bearer\s+[A-Za-z0-9_\-.]{20,}", "Bearer token in code"),
 ]
 
 # Files to skip (these commonly contain key-like patterns that aren't secrets)
-_SKIP_EXTENSIONS = {".lock", ".sum", ".map", ".min.js", ".min.css", ".svg", ".png", ".jpg", ".gif", ".ico"}
-_SKIP_FILENAMES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "go.sum", "Cargo.lock", "uv.lock"}
+_SKIP_EXTENSIONS = {
+    ".lock",
+    ".sum",
+    ".map",
+    ".min.js",
+    ".min.css",
+    ".svg",
+    ".png",
+    ".jpg",
+    ".gif",
+    ".ico",
+}
+_SKIP_FILENAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "go.sum",
+    "Cargo.lock",
+    "uv.lock",
+}
 
 
 def run(input: dict) -> dict | None:
@@ -41,8 +79,14 @@ def run(input: dict) -> dict | None:
     # Telemetry
     try:
         from hook_telemetry import log_event
+
         if findings:
-            log_event("secrets_scan", "block", {"findings_count": len(findings), "findings": findings[:5]}, blocked=True)
+            log_event(
+                "secrets_scan",
+                "block",
+                {"findings_count": len(findings), "findings": findings[:5]},
+                blocked=True,
+            )
         else:
             log_event("secrets_scan", "pass")
     except Exception:
@@ -64,8 +108,8 @@ def run(input: dict) -> dict | None:
                 f"I found {len(findings)} potential secret(s) in staged files that shouldn't be committed:\n"
                 f"{details}\n\n"
                 "How to fix: Move secrets to environment variables.\n"
-                "  Instead of:  API_KEY = \"sk_live_abc123\"\n"
-                "  Use:         API_KEY = os.environ[\"API_KEY\"]\n\n"
+                '  Instead of:  API_KEY = "sk_live_abc123"\n'
+                '  Use:         API_KEY = os.environ["API_KEY"]\n\n'
                 "Then set the variable in your shell: export API_KEY=sk_live_abc123"
             ),
         }
@@ -80,7 +124,9 @@ def _scan_staged_files() -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return []
@@ -101,7 +147,9 @@ def _scan_staged_files() -> list[str]:
         try:
             result = subprocess.run(
                 ["git", "show", f":{file_path}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 continue

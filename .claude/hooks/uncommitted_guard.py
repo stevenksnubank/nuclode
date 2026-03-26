@@ -25,12 +25,10 @@ def run(input: dict) -> dict | None:
         if len(lines) > 10:
             summary += f" ... and {len(lines) - 10} more"
 
-        return {
-            "decision": "block",
-            "reason": (
-                f"Heads up — you have {len(lines)} unsaved change(s): {summary}. "
-                "Want me to save these to the project history before you go?"
-            ),
-        }
+        print(
+            f"Heads up — you have {len(lines)} unsaved change(s): {summary}. "
+            "Want me to save these to the project history before you go?"
+        )
+        return None
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         return None

@@ -1,4 +1,8 @@
 """PostToolUse hook — warn about debug/logging statements in edited files."""
+
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in post_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 from __future__ import annotations
 
 import re
@@ -47,7 +51,7 @@ def run(input: dict) -> dict | None:
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
             "additionalContext": claude_context,
-        }
+        },
     }
 
 
@@ -57,7 +61,9 @@ def _find_debug_statements(file_path: str, pattern: str) -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "-U0", file_path],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.stdout:
             added = [
@@ -73,7 +79,7 @@ def _find_debug_statements(file_path: str, pattern: str) -> list[str]:
     try:
         lines = Path(file_path).read_text(encoding="utf-8").splitlines()
         return [
-            f"L{i+1}: {l.strip()}"
+            f"L{i + 1}: {l.strip()}"
             for i, l in enumerate(lines)
             if re.search(pattern, l, re.IGNORECASE)
         ][:3]

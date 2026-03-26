@@ -53,6 +53,8 @@ _HOOKS_LOG = Path.home() / ".claude" / "metrics" / "hooks.jsonl"
 
 _STOPPED_FADE_SECS = 3  # show stopped agents briefly before removing
 
+_beads_cache: dict = {"ts": 0.0, "data": None}
+
 
 def _clr(text: str, color: str) -> str:
     return f"{color}{text}{RESET}"
@@ -161,6 +163,83 @@ def _project_info() -> tuple[str, str]:
         return "claude", ""
 
 
+def _load_beads_summary() -> list | None:
+    """Run `bd list --json` and return parsed bead list. Caches for 5s."""
+    global _beads_cache
+    if time.time() - _beads_cache["ts"] < 5.0:
+        return _beads_cache["data"]
+    try:
+        result = subprocess.run(
+            ["bd", "list", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("non-zero exit")
+        data = json.loads(result.stdout)
+        _beads_cache = {"ts": time.time(), "data": data}
+        return data
+    except Exception:
+        _beads_cache = {"ts": time.time(), "data": None}
+        return None
+
+
+def _render_beads(beads: list | None) -> list[str]:
+    """Render the BEADS section lines."""
+    lines: list[str] = []
+
+    if beads is None:
+        lines.append(_bold(" BEADS") + f"  {_dim('unavailable')}")
+        lines.append("")
+        return lines
+
+    open_beads = [b for b in beads if b.get("status") in ("ready", "in_progress", "blocked")]
+
+    counts = {
+        "ready": sum(1 for b in open_beads if b.get("status") == "ready"),
+        "in_progress": sum(1 for b in open_beads if b.get("status") == "in_progress"),
+        "blocked": sum(1 for b in open_beads if b.get("status") == "blocked"),
+    }
+    count_str = (
+        "  ·  ".join(f"{v} {k.replace('_', ' ')}" for k, v in counts.items() if v)
+        or "no open tasks"
+    )
+
+    lines.append(_bold(" BEADS") + f"  {_dim(count_str)}")
+
+    if not open_beads:
+        lines.append(_dim("  No open tasks"))
+        lines.append("")
+        return lines
+
+    shown = open_beads[:5]
+    overflow = len(open_beads) - len(shown)
+
+    for i, bead in enumerate(shown):
+        is_last = i == len(shown) - 1 and overflow == 0
+        prefix = "  └─" if is_last else "  ├─"
+        status = bead.get("status", "ready")
+        title = bead.get("title", "untitled")[:40]
+        priority = bead.get("priority", "")
+
+        if status == "in_progress":
+            status_str = _clr(f"[{status}]", FG_GREEN)
+        elif status == "blocked":
+            status_str = _clr(f"[{status}] ", FG_RED)
+        else:
+            status_str = _dim(f"[{status}]   ")
+
+        prio_str = _dim(f"  {priority}") if priority else ""
+        lines.append(f"{prefix} {status_str} {title}{prio_str}")
+
+    if overflow:
+        lines.append(f"  {_dim(f'… and {overflow} more')}")
+
+    lines.append("")
+    return lines
+
+
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
@@ -170,6 +249,7 @@ def _render(project: str, branch: str) -> str:
     agents = _load_agents()
     events = _load_recent_events()
     last_skill = _load_last_skill()
+    beads = _load_beads_summary()
     now = datetime.now().strftime("%H:%M:%S")
 
     lines: list[str] = []
@@ -227,6 +307,9 @@ def _render(project: str, branch: str) -> str:
             lines.append(row)
 
     lines.append("")
+
+    # Beads section
+    lines.extend(_render_beads(beads))
 
     # Last skill
     if last_skill:

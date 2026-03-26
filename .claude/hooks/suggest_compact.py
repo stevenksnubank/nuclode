@@ -1,4 +1,8 @@
 """PreToolUse hook — track edit count and suggest compaction at intervals. Strict only."""
+
+# ⚠️  NOT ACTIVE — This file is NOT invoked by settings.json.
+# The active version of this logic lives in pre_tool_use.py.
+# Edit that file instead. Changes here will have no effect.
 from __future__ import annotations
 
 import os
