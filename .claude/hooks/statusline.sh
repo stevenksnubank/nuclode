@@ -2,7 +2,9 @@
 # nuclode status line — shows branch, file status, and active phase
 # Runs periodically by Claude Code to update the status bar
 
-PARTS="nuclode"
+# Current project name from git root directory name
+PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+PARTS="${PROJECT:-claude}"
 
 # Only show profile if non-default (strict is notable)
 PROFILE="${NUCLODE_HOOK_PROFILE:-standard}"
