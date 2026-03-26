@@ -80,9 +80,7 @@ def create_bead(
     return result.stdout.strip()
 
 
-def link_beads(
-    from_id: str, to_id: str, rel_type: str, db_path: Path | None = None
-) -> bool:
+def link_beads(from_id: str, to_id: str, rel_type: str, db_path: Path | None = None) -> bool:
     """Link two beads via bd dep add. Returns True on success.
 
     rel_type mapping:
@@ -147,6 +145,36 @@ def export_graph(db_path: Path | None = None) -> str:
     return result.stdout
 
 
+def _format_bead_body(analysis: dict) -> str:
+    """Format a flow-analysis dict as a dual-format bead body.
+
+    Produces human-readable markdown prose followed by a fenced JSON block
+    so both graph viewers and LLM consumers get what they need.
+    """
+
+    def _bullets(items: list | None) -> str:
+        if not items:
+            return "None"
+        return "\n".join(f"- {item}" for item in items)
+
+    lines: list[str] = []
+
+    role = analysis.get("role") or "Unknown"
+    layer = analysis.get("layer") or "Unknown"
+    lines.append(f"## Role\n{role}\n")
+    lines.append(f"## Layer\n{layer}\n")
+
+    lines.append(f"### Side Effects\n{_bullets(analysis.get('side_effects'))}\n")
+    lines.append(f"### Security Notes\n{_bullets(analysis.get('security_notes'))}\n")
+    lines.append(f"### Bottlenecks\n{_bullets(analysis.get('bottlenecks'))}\n")
+    lines.append(f"### Security Findings\n{_bullets(analysis.get('security_findings'))}\n")
+    lines.append(f"### Coupling Issues\n{_bullets(analysis.get('coupling_issues'))}\n")
+
+    lines.append("```json\n" + _json.dumps(analysis, indent=2) + "\n```")
+
+    return "\n".join(lines)
+
+
 def reduce_to_beads(
     analyses: list[dict],
     db_path: Path,
@@ -175,7 +203,7 @@ def reduce_to_beads(
 
     for analysis in analyses:
         flow_name = analysis["flow_name"]
-        body = _json.dumps(analysis, indent=2)
+        body = _format_bead_body(analysis)
 
         # Collect tags from namespace layers and side effects
         tags: set[str] = {"structure"}

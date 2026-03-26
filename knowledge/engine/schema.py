@@ -21,7 +21,9 @@ FLOW_ANALYSIS_SCHEMA: dict = {
         "entry_points",
         "exit_points",
         "namespaces",
-        "data_flow",
+        # data_flow is intentionally omitted by the model; edges are derived
+        # from the code graph in reduce_to_beads, not from sub-LM output.
+        # See prompts.py build_flow_group_prompt — "Do NOT include data_flow".
         "bottlenecks",
         "security_findings",
         "coupling_issues",

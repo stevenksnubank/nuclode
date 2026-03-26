@@ -147,7 +147,15 @@ case "$TOOL_NAME" in
 
         # Extract URLs from the command
         URLS="$(extract_urls_from_command "$COMMAND")"
-        [ -z "$URLS" ] && allow
+
+        # If command matched a network tool but no URL could be extracted,
+        # it may use a variable or dynamic URL — block and require user confirmation.
+        if [ -z "$URLS" ]; then
+            cat <<'GUARDEOF'
+{"decision":"block","reason":"NETWORK GUARD: Command uses a network tool but contains no verifiable URL (may use variable or dynamic URL). Confirm with the user before proceeding."}
+GUARDEOF
+            exit 0
+        fi
 
         # Check each URL's domain
         while IFS= read -r url; do

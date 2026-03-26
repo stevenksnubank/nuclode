@@ -20,9 +20,12 @@ from knowledge.backends.base import LanguageBackend
 from knowledge.engine.chunking import partition_flow_groups
 from knowledge.engine.config import EngineConfig, load_config
 from knowledge.engine.pipeline import PipelineResult, PipelineRunner
-from knowledge.engine.runner import EngineResult, EngineRunner
+from knowledge.engine.runner import EngineResult
 from knowledge.recipes.codebase_analysis.beads_tools import get_custom_tools, reduce_to_beads
-from knowledge.recipes.codebase_analysis.context_loader import load_codebase_context, load_source_map
+from knowledge.recipes.codebase_analysis.context_loader import (
+    load_codebase_context,
+    load_source_map,
+)
 from knowledge.recipes.codebase_analysis.prompts import build_analysis_prompt
 
 logger = logging.getLogger(__name__)
@@ -320,66 +323,6 @@ class CodebaseAnalyzer:
             pipeline_result=pipeline_result,
         )
 
-    def run_incremental(
-        self,
-        changed_namespaces: list[str],
-        mode: str = "structure",
-    ) -> AnalysisResult:
-        """Re-analyze only changed namespaces.
-
-        Args:
-            changed_namespaces: List of namespace names to re-analyze.
-            mode: "structure" or "security".
-
-        Returns:
-            AnalysisResult with incremental analysis details.
-        """
-        staleness = self.check_staleness()
-
-        # Load full context but filter to changed namespaces
-        context = load_codebase_context(self._project_dir, self._backend)
-
-        # Filter structure summary to only changed namespaces
-        filtered_summary = dict(context.structure_summary)
-        filtered_summary["namespaces"] = [
-            ns for ns in filtered_summary.get("namespaces", [])
-            if ns.get("name") in changed_namespaces
-        ]
-        filtered_summary["namespace_count"] = len(filtered_summary["namespaces"])
-        filtered_summary["incremental"] = True
-        filtered_summary["changed_namespaces"] = changed_namespaces
-
-        prompt = build_analysis_prompt(
-            project_name=context.project_name,
-            structure_summary=filtered_summary,
-            mode=mode,
-        )
-
-        try:
-            custom_tools = get_custom_tools(self._db_path)
-        except (TypeError, ValueError):
-            custom_tools = {}
-
-        runner = EngineRunner(self._config)
-        engine_result = runner.run(
-            context=filtered_summary,
-            custom_tools=custom_tools,
-            system_prompt=prompt,
-            structure_summary=filtered_summary,
-        )
-
-        commit_sha = staleness.current_sha
-        if engine_result.status == "completed" and commit_sha:
-            self.store_analysis_metadata(commit_sha)
-
-        return AnalysisResult(
-            status=engine_result.status,
-            engine_result=engine_result,
-            staleness=staleness,
-            namespace_count=len(changed_namespaces),
-            commit_sha=commit_sha,
-        )
-
     def verify_graph(self) -> bool:
         """Verify the beads graph has structure beads.
 
@@ -444,9 +387,7 @@ def _get_current_sha(project_dir: Path) -> str | None:
     return None
 
 
-def _get_changed_files(
-    project_dir: Path, from_sha: str, to_sha: str | None
-) -> list[str]:
+def _get_changed_files(project_dir: Path, from_sha: str, to_sha: str | None) -> list[str]:
     """Get files changed between two commits."""
     to_ref = to_sha or "HEAD"
     try:
@@ -479,10 +420,7 @@ def _map_files_to_namespaces(
 
     # Only consider source files the backend would process
     source_extensions = {".clj", ".cljc", ".cljs"}
-    source_changes = [
-        f for f in changed_files
-        if Path(f).suffix in source_extensions
-    ]
+    source_changes = [f for f in changed_files if Path(f).suffix in source_extensions]
 
     if not source_changes:
         return []
