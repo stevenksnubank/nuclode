@@ -63,18 +63,38 @@ def _check_auth_preflight(parts: list[str]) -> None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass  # AWS CLI not installed — not a warning
 
-    # SSH key for git (host: git user at github.com)
+    # SSH key for git — check agent, open new Terminal to load key if needed
     try:
-        ssh_host = "git@" + "github.com"
-        result = subprocess.run(
-            ["ssh", "-T", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3", ssh_host],
+        agent_result = subprocess.run(
+            ["ssh-add", "-l"],
             capture_output=True,
             text=True,
-            timeout=6,
+            timeout=3,
         )
-        # GitHub returns exit code 1 on success ("Hi username!"), 255 on auth failure
-        if result.returncode == 255 or "Permission denied" in result.stderr:
-            warnings.append("SSH key not accepted by GitHub — git push may fail")
+        if agent_result.returncode != 0:
+            # Open a new Terminal window for interactive ssh-add (non-blocking)
+            subprocess.Popen(
+                [
+                    "osascript",
+                    "-e",
+                    'tell application "Terminal" to do script "ssh-add; echo \\"\\nDone — you can close this window\\""',
+                ]
+            )
+            warnings.append(
+                "SSH keys not loaded — enter passphrase in the Terminal window that just opened"
+            )
+        else:
+            # Keys loaded — verify GitHub accepts them
+            ssh_host = "git@" + "github.com"
+            result = subprocess.run(
+                ["ssh", "-T", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3", ssh_host],
+                capture_output=True,
+                text=True,
+                timeout=6,
+            )
+            # GitHub returns exit code 1 on success ("Hi username!"), 255 on auth failure
+            if result.returncode == 255 or "Permission denied" in result.stderr:
+                warnings.append("SSH key not accepted by GitHub — git push may fail")
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
