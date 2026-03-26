@@ -19,6 +19,7 @@ def run(input: dict) -> dict | None:
     project_dir = Path(cwd).resolve()
     parts: list[str] = []
 
+    _check_auth_preflight(parts)
     _detect_project(parts, project_dir)
     _check_beads(parts, project_dir)
     _check_analysis_freshness(parts, project_dir)
@@ -37,6 +38,50 @@ def run(input: dict) -> dict | None:
         # Trigger nuclode-guide to show a proactive welcome before the user types anything
         "prompt": "nuclode:startup",
     }
+
+
+def _check_auth_preflight(parts: list[str]) -> None:
+    """Check critical auth dependencies at session start. Non-blocking — warns only."""
+    profile = os.environ.get("NUCLODE_HOOK_PROFILE", "standard")
+    if profile == "minimal":
+        return
+
+    warnings: list[str] = []
+
+    # AWS credentials
+    try:
+        result = subprocess.run(
+            ["aws", "sts", "get-caller-identity"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            warnings.append(
+                "AWS credentials invalid or expired (aws sts get-caller-identity failed)"
+            )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass  # AWS CLI not installed — not a warning
+
+    # SSH key for git (host: git user at github.com)
+    try:
+        ssh_host = "git@" + "github.com"
+        result = subprocess.run(
+            ["ssh", "-T", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3", ssh_host],
+            capture_output=True,
+            text=True,
+            timeout=6,
+        )
+        # GitHub returns exit code 1 on success ("Hi username!"), 255 on auth failure
+        if result.returncode == 255 or "Permission denied" in result.stderr:
+            warnings.append("SSH key not accepted by GitHub — git push may fail")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    if warnings:
+        parts.append(
+            "⚠️ Auth issues: " + "; ".join(warnings) + ". Fix before starting auth-dependent work."
+        )
 
 
 def _detect_project(parts: list[str], project_dir: Path) -> None:

@@ -16,6 +16,7 @@ Env vars:
     NUCLODE_DISABLED_HOOKS  - comma-separated hook IDs to disable
     NUCLODE_COMPACT_THRESHOLD - edits before suggesting compact (default: 30)
 """
+
 from __future__ import annotations
 
 import json
@@ -37,9 +38,7 @@ def _load_profile():
     """Return (current_profile, disabled_hooks) from env."""
     profile = os.environ.get("NUCLODE_HOOK_PROFILE", "standard")
     disabled = {
-        h.strip()
-        for h in os.environ.get("NUCLODE_DISABLED_HOOKS", "").split(",")
-        if h.strip()
+        h.strip() for h in os.environ.get("NUCLODE_DISABLED_HOOKS", "").split(",") if h.strip()
     }
     return profile, disabled
 
@@ -57,6 +56,7 @@ def _log_event(hook_name: str, event_type: str, details: dict | None = None, blo
     """Best-effort telemetry logging."""
     try:
         from hook_telemetry import log_event
+
         log_event(hook_name, event_type, details, blocked=blocked)
     except Exception:
         pass
@@ -68,21 +68,55 @@ def _log_event(hook_name: str, event_type: str, details: dict | None = None, blo
 
 _SECRET_PATTERNS: list[tuple[str, str, str]] = [
     ("AWS Access Key", r"AKIA[0-9A-Z]{16}", "AWS access key ID"),
-    ("AWS Secret Key", r"(?i)aws_secret_access_key\s*[=:]\s*['\"]?[A-Za-z0-9/+=]{40}", "AWS secret access key"),
+    (
+        "AWS Secret Key",
+        r"(?i)aws_secret_access_key\s*[=:]\s*['\"]?[A-Za-z0-9/+=]{40}",
+        "AWS secret access key",
+    ),
     ("GitHub Token", r"gh[pousr]_[A-Za-z0-9_]{36,}", "GitHub personal access token"),
     ("GitLab Token", r"glpat-[A-Za-z0-9\-_]{20,}", "GitLab personal access token"),
     ("Slack Token", r"xox[bpors]-[A-Za-z0-9\-]{10,}", "Slack API token"),
     ("Stripe Key", r"sk_live_[A-Za-z0-9]{20,}", "Stripe secret key"),
     ("Stripe Publishable", r"pk_live_[A-Za-z0-9]{20,}", "Stripe publishable key (live)"),
-    ("Generic API Key", r"(?i)(api[_-]?key|apikey)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{20,}['\"]?", "Possible API key assignment"),
-    ("Generic Secret", r"(?i)(secret|password|passwd|token)\s*[=:]\s*['\"][^'\"]{8,}['\"]", "Possible hardcoded secret"),
+    (
+        "Generic API Key",
+        r"(?i)(api[_-]?key|apikey)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{20,}['\"]?",
+        "Possible API key assignment",
+    ),
+    (
+        "Generic Secret",
+        r"(?i)(secret|password|passwd|token)\s*[=:]\s*['\"][^'\"]{8,}['\"]",
+        "Possible hardcoded secret",
+    ),
     ("Private Key", r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----", "Private key in file"),
-    ("Heroku API Key", r"(?i)heroku.*[=:]\s*['\"]?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "Heroku API key"),
+    (
+        "Heroku API Key",
+        r"(?i)heroku.*[=:]\s*['\"]?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        "Heroku API key",
+    ),
     ("Generic Bearer Token", r"(?i)bearer\s+[A-Za-z0-9_\-.]{20,}", "Bearer token in code"),
 ]
 
-_SKIP_EXTENSIONS = {".lock", ".sum", ".map", ".min.js", ".min.css", ".svg", ".png", ".jpg", ".gif", ".ico"}
-_SKIP_FILENAMES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "go.sum", "Cargo.lock", "uv.lock"}
+_SKIP_EXTENSIONS = {
+    ".lock",
+    ".sum",
+    ".map",
+    ".min.js",
+    ".min.css",
+    ".svg",
+    ".png",
+    ".jpg",
+    ".gif",
+    ".ico",
+}
+_SKIP_FILENAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "go.sum",
+    "Cargo.lock",
+    "uv.lock",
+}
 
 
 def _check_secrets(command: str) -> dict | None:
@@ -91,9 +125,12 @@ def _check_secrets(command: str) -> dict | None:
         return None
 
     findings = _scan_staged_for_secrets()
-    _log_event("secrets_scan", "block" if findings else "pass",
-               {"findings_count": len(findings)} if findings else None,
-               blocked=bool(findings))
+    _log_event(
+        "secrets_scan",
+        "block" if findings else "pass",
+        {"findings_count": len(findings)} if findings else None,
+        blocked=bool(findings),
+    )
 
     if not findings:
         return None
@@ -110,8 +147,8 @@ def _check_secrets(command: str) -> dict | None:
                 f"I found {len(findings)} potential secret(s) in staged files that shouldn't be committed:\n"
                 f"{details}\n\n"
                 "How to fix: Move secrets to environment variables.\n"
-                "  Instead of:  API_KEY = \"sk_live_abc123\"\n"
-                "  Use:         API_KEY = os.environ[\"API_KEY\"]\n\n"
+                '  Instead of:  API_KEY = "sk_live_abc123"\n'
+                '  Use:         API_KEY = os.environ["API_KEY"]\n\n'
                 "Then set the variable in your shell: export API_KEY=sk_live_abc123"
             ),
         }
@@ -123,7 +160,9 @@ def _scan_staged_for_secrets() -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return []
@@ -138,7 +177,9 @@ def _scan_staged_for_secrets() -> list[str]:
         try:
             result = subprocess.run(
                 ["git", "show", f":{file_path}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 continue
@@ -162,6 +203,7 @@ def _scan_staged_for_secrets() -> list[str]:
 # Check 2: SAST gate (on git commit)
 # ---------------------------------------------------------------------------
 
+
 def _check_sast_gate(command: str) -> dict | None:
     """Block git commits with HIGH severity security patterns."""
     if "git commit" not in command:
@@ -170,7 +212,8 @@ def _check_sast_gate(command: str) -> dict | None:
     # Import patterns from shared module
     try:
         spec = __import__("importlib").util.spec_from_file_location(
-            "sast_patterns", str(HOOK_DIR / "sast_patterns.py"))
+            "sast_patterns", str(HOOK_DIR / "sast_patterns.py")
+        )
         mod = __import__("importlib").util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         patterns = mod.PATTERNS
@@ -180,9 +223,12 @@ def _check_sast_gate(command: str) -> dict | None:
         return None
 
     findings = _scan_staged_for_sast(patterns, skip_ext, skip_names)
-    _log_event("sast_gate", "block" if findings else "pass",
-               {"findings_count": len(findings)} if findings else None,
-               blocked=bool(findings))
+    _log_event(
+        "sast_gate",
+        "block" if findings else "pass",
+        {"findings_count": len(findings)} if findings else None,
+        blocked=bool(findings),
+    )
 
     if not findings:
         return None
@@ -198,7 +244,7 @@ def _check_sast_gate(command: str) -> dict | None:
             "permissionDecisionReason": (
                 f"I caught {len(findings)} security issue(s) in staged files that need attention:\n"
                 f"{details}\n\n"
-                "This is a common pattern to catch — just say \"fix the security issues\" "
+                'This is a common pattern to catch — just say "fix the security issues" '
                 "and I'll rewrite the code safely."
             ),
         }
@@ -210,7 +256,9 @@ def _scan_staged_for_sast(patterns, skip_ext, skip_names) -> list[str]:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return []
@@ -232,7 +280,9 @@ def _scan_staged_for_sast(patterns, skip_ext, skip_names) -> list[str]:
         try:
             result = subprocess.run(
                 ["git", "show", f":{file_path}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode != 0:
                 continue
@@ -253,6 +303,7 @@ def _scan_staged_for_sast(patterns, skip_ext, skip_names) -> list[str]:
 # ---------------------------------------------------------------------------
 # Check 3: Pages guard (Bash, Write, Edit)
 # ---------------------------------------------------------------------------
+
 
 def _check_pages_guard(tool_name: str, tool_input: dict) -> dict | None:
     """Block GitHub Pages publishing from personal repos."""
@@ -298,8 +349,12 @@ def _pages_check_file(file_path: str) -> dict | None:
         )
     if ".github/workflows" in file_path:
         try:
-            content = Path(file_path).read_text(encoding="utf-8") if Path(file_path).exists() else ""
-            if "pages" in content.lower() and ("deploy" in content.lower() or "publish" in content.lower()):
+            content = (
+                Path(file_path).read_text(encoding="utf-8") if Path(file_path).exists() else ""
+            )
+            if "pages" in content.lower() and (
+                "deploy" in content.lower() or "publish" in content.lower()
+            ):
                 return _pages_warn(
                     "This GitHub Actions workflow appears to deploy to GitHub Pages. "
                     "Pages content is publicly accessible — verify no confidential data is included."
@@ -340,6 +395,7 @@ def _pages_warn(reason: str) -> dict:
 # Checks version history, link quality, and errata on staged .md files.
 # ---------------------------------------------------------------------------
 
+
 def _check_commit_quality(command: str) -> dict | None:
     """Quality checks on staged markdown files before git commit."""
     if "git commit" not in command:
@@ -350,13 +406,16 @@ def _check_commit_quality(command: str) -> dict | None:
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0:
             return None
         # Only check .md files in subdirectories (not top-level like README.md)
         staged_md = [
-            f.strip() for f in result.stdout.strip().splitlines()
+            f.strip()
+            for f in result.stdout.strip().splitlines()
             if f.strip().endswith(".md") and "/" in f.strip()
         ]
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -379,33 +438,41 @@ def _check_commit_quality(command: str) -> dict | None:
         # Version history check: staged research docs should have today's entry
         if "## Version History" in content:
             if f"| {today}" not in content:
-                warnings.append(f"  - {file_path}: Version History has no entry for today ({today})")
+                warnings.append(
+                    f"  - {file_path}: Version History has no entry for today ({today})"
+                )
         # Only warn about missing version history for research-like docs (has AI disclaimer or Sources)
         elif "AI Disclaimer" in content or "## Sources" in content:
             warnings.append(f"  - {file_path}: no Version History section found")
 
         # Link quality: imprecise code links (branch names instead of commit hashes)
-        for match in re.finditer(r'github\.com/[^)]*/(blob|tree)/(main|master|develop|HEAD)/', content):
-            line_num = content[:match.start()].count("\n") + 1
-            warnings.append(f"  - {file_path}:L{line_num}: imprecise code link (uses branch name, not commit hash)")
+        for match in re.finditer(
+            r"github\.com/[^)]*/(blob|tree)/(main|master|develop|HEAD)/", content
+        ):
+            line_num = content[: match.start()].count("\n") + 1
+            warnings.append(
+                f"  - {file_path}:L{line_num}: imprecise code link (uses branch name, not commit hash)"
+            )
 
         # Link quality: raw URLs as link display text
-        for match in re.finditer(r'\[https?://[^\]]*\]\(https?://', content):
-            line_num = content[:match.start()].count("\n") + 1
+        for match in re.finditer(r"\[https?://[^\]]*\]\(https?://", content):
+            line_num = content[: match.start()].count("\n") + 1
             warnings.append(f"  - {file_path}:L{line_num}: raw URL used as link display text")
 
         # Errata section check (only for research docs)
         if ("AI Disclaimer" in content or "## Sources" in content) and "## Errata" not in content:
-            warnings.append(f"  - {file_path}: no Errata section found (required for research docs)")
+            warnings.append(
+                f"  - {file_path}: no Errata section found (required for research docs)"
+            )
 
         # Unescaped pipe chars inside backticks in table rows (GFM rendering issue)
         for line_num, line in enumerate(content.splitlines(), 1):
             if line.startswith("|"):
                 # Find backtick spans and check for unescaped pipes
-                for span_match in re.finditer(r'`[^`]*`', line):
+                for span_match in re.finditer(r"`[^`]*`", line):
                     span = span_match.group()
                     # Check for pipe not preceded by backslash
-                    if re.search(r'(?<!\\)\|', span):
+                    if re.search(r"(?<!\\)\|", span):
                         warnings.append(
                             f"  - {file_path}:L{line_num}: unescaped pipe inside backticks in table row "
                             "(escape as \\| per GFM Example 200)"
@@ -437,6 +504,7 @@ def _check_commit_quality(command: str) -> dict | None:
 # ---------------------------------------------------------------------------
 # Check 5: Suggest compact (on Edit|Write)
 # ---------------------------------------------------------------------------
+
 
 def _check_suggest_compact(tool_name: str, input_data: dict) -> dict | None:
     """Track edit count and suggest compaction at intervals."""
@@ -480,6 +548,7 @@ def _check_suggest_compact(tool_name: str, input_data: dict) -> dict | None:
 # Main dispatcher
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     profile, disabled = _load_profile()
 
@@ -496,28 +565,34 @@ def main() -> None:
     # --- Blocking checks (first block wins) ---
 
     # 1. Secrets scan (Bash only, standard+strict)
-    if tool_name == "Bash" and _is_enabled("pre:secrets-scan", profile, disabled, {"standard", "strict"}):
+    if tool_name == "Bash" and _is_enabled(
+        "pre:secrets-scan", profile, disabled, {"standard", "strict"}
+    ):
         result = _check_secrets(command)
         if result:
             json.dump(result, sys.stdout)
             return
 
     # 2. SAST gate (Bash only, standard+strict)
-    if tool_name == "Bash" and _is_enabled("pre:sast-gate", profile, disabled, {"standard", "strict"}):
+    if tool_name == "Bash" and _is_enabled(
+        "pre:sast-gate", profile, disabled, {"standard", "strict"}
+    ):
         result = _check_sast_gate(command)
         if result:
             json.dump(result, sys.stdout)
             return
 
     # 3. Pages guard (Bash|Write|Edit, standard+strict)
-    if tool_name in ("Bash", "Write", "Edit") and _is_enabled("pre:pages-guard", profile, disabled, {"standard", "strict"}):
+    if tool_name in ("Bash", "Write", "Edit") and _is_enabled(
+        "pre:pages-guard", profile, disabled, {"standard", "strict"}
+    ):
         result = _check_pages_guard(tool_name, tool_input)
         if result:
             json.dump(result, sys.stdout)
             return
 
-    # 4. Commit quality gates (Bash only, standard+strict)
-    if tool_name == "Bash" and _is_enabled("pre:commit-quality", profile, disabled, {"standard", "strict"}):
+    # 4. Commit quality gates (Bash only, strict only — research/RFC doc workflow)
+    if tool_name == "Bash" and _is_enabled("pre:commit-quality", profile, disabled, {"strict"}):
         result = _check_commit_quality(command)
         if result:
             json.dump(result, sys.stdout)

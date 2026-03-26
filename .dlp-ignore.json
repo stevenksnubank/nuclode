@@ -8,5 +8,10 @@
         "path": "core/hooks/test-network-guard.sh",
         "policy": "EmailPolicy",
         "justification": "Test file contains synthetic URLs with @ symbols to test userinfo extraction. Not real email addresses."
+    },
+    {
+        "path": ".claude/hooks/session_start.py",
+        "policy": "EmailPolicy",
+        "justification": "SSH host string for GitHub (git + hostname) used in auth pre-flight check, not a personal email address"
     }
 ]
