@@ -30,6 +30,26 @@
             "command": "~/.claude/hooks/network-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/agent-watch-pre.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/agent-watch-post.sh"
+          }
+        ]
       }
     ]
   },
