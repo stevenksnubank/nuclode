@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "plan-handoff.schema.json",
+  "title": "Plan Handoff",
+  "description": "Typed contract between code-planner and code-implementer. code-planner writes this; human sets approved:true; code-implementer gates on approved==true.",
+  "type": "object",
+  "required": ["task_id", "created_at", "summary", "scope", "decisions", "changes", "verification", "approved"],
+  "additionalProperties": false,
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Bead ID of the intent bead anchoring this task"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this handoff was written"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-sentence description of what is being implemented"
+    },
+    "scope": {
+      "type": "object",
+      "required": ["files_in_scope", "files_not_in_scope", "constraints"],
+      "additionalProperties": false,
+      "properties": {
+        "files_in_scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths of files the implementer is permitted to create or modify"
+        },
+        "files_not_in_scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths explicitly excluded from this implementation"
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Hard constraints the implementer must not violate"
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Architectural decisions made during planning, with rationale",
+      "items": {
+        "type": "object",
+        "required": ["decision", "rationale", "alternatives_rejected"],
+        "additionalProperties": false,
+        "properties": {
+          "decision": { "type": "string" },
+          "rationale": { "type": "string" },
+          "alternatives_rejected": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "description": "Ordered list of file-level changes the implementer must execute",
+      "items": {
+        "type": "object",
+        "required": ["file", "action", "description", "tests_required"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string" },
+          "action": {
+            "type": "string",
+            "enum": ["create", "modify", "delete"]
+          },
+          "description": { "type": "string" },
+          "tests_required": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "completed": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true by implementer when this change is done"
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["commands", "blocked_if"],
+      "additionalProperties": false,
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Commands to run to verify the implementation (e.g. pytest tests/ -v)"
+        },
+        "blocked_if": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Conditions under which implementation must not be marked complete (e.g. any test fails)"
+        }
+      }
+    },
+    "approved": {
+      "type": "boolean",
+      "description": "Set to false by code-planner. Human sets to true at CP-1 (plan approval). code-implementer must refuse to start until this is true.",
+      "default": false
+    }
+  }
+}

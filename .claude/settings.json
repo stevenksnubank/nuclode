@@ -1,4 +1,9 @@
 {
+  "permissions": {
+    "allow": [
+      "Read(/Users/steven.kumarsingh/dev/ia-audit-orchestrator/**)"
+    ]
+  },
   "model": "sonnet",
   "agent": "nuclode-guide",
   "statusLine": {

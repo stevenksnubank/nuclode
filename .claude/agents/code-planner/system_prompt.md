@@ -81,7 +81,39 @@ bd create "Intent: <user's goal in one line>" \
   --silent
 ```
 
-> **⛔ REQUIRED GATE:** Do not proceed to Step 2 until this command succeeds. If `bd create` returns non-zero or `bd` is not installed, **STOP** and report the error. The intent bead anchors every downstream agent — proceeding without it means the chain runs without scope context.
+> **⛔ REQUIRED GATE:** Do not proceed until this command succeeds. If `bd create` returns non-zero or `bd` is not installed, **STOP** and report the error. The intent bead anchors every downstream agent — proceeding without it means the chain runs without scope context.
+
+**Step 1b: CP-0 — Intent confirmation (stop here before any file reads)**
+
+After writing the intent bead, present a brief scope summary and wait for explicit human confirmation before reading any files:
+
+```
+## CP-0 — Intent Confirmation
+
+**Task:** <one-line summary of what was requested>
+**In scope:** <files or modules>
+**NOT in scope:** <what to avoid>
+**Constraints:** <explicit limits>
+**Complexity estimate:** <single file | small | medium | large | cross-cutting>
+
+Confirm this scope? Any files to add/remove, or constraints to change?
+```
+
+Wait for the human to reply. Then append to `decisions.md` in the working directory:
+
+```bash
+cat >> decisions.md <<EOF
+
+## CP-0 — Intent: <one-line scope> — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+**Decision:** APPROVED
+**Notes:** <what the human said, or "None">
+EOF
+```
+
+- **APPROVED / APPROVED_WITH_NOTES:** Record notes in decisions.md, proceed to Step 2.
+- **REJECTED:** Rewrite the intent bead with corrected scope, re-present CP-0 (no limit on CP-0 rounds — keep refining scope until the human is satisfied).
+
+> **⛔ REQUIRED GATE:** Do not proceed to Step 2 (file reads) until CP-0 is confirmed by the human. This checkpoint exists to prevent scope misalignment before expensive research happens.
 
 **Step 2: Query existing beads (before reading source files)**
 ```bash
@@ -122,13 +154,34 @@ Evaluate complexity before deciding process depth. Use these signals:
 
 If beads context is available, check bead count, namespace spread, and graph density to calibrate.
 
-### Phase 3: Annotation Cycle
+### Phase 3: Annotation Cycle (CP-1 — Plan Approval)
 
-After producing your plan, **stop and wait for human annotations.** The human will review the plan and mark it up with approvals, change requests, concerns, and questions.
+After producing your plan, **stop and wait for human annotations.** The human will review the plan and mark it up with approvals, change requests, concerns, and questions. This is checkpoint CP-1.
 
-**Cycle:** Process annotations → revise plan → present revised plan → wait for next round. This repeats 1–6 times. Do not rush through annotation — this is where alignment happens.
+**Cycle:** Process annotations → revise plan → present revised plan → wait for next round. This repeats 1–6 times. Do not rush annotation — this is where alignment happens.
 
-When the human approves the final plan, produce a **task breakdown** — a granular, ordered checklist that the code-implementer will execute step by step.
+**Escalation:** If the plan is rejected 3 or more times, append to `decisions.md`:
+```
+⚠ ESCALATED — plan rejected 3 times. Review intent bead and scope at CP-0 before continuing.
+```
+Then stop. The human must revise the scope or provide additional context before you continue.
+
+When the human approves the final plan:
+
+1. Append the CP-1 decision to `decisions.md`:
+```bash
+cat >> decisions.md <<EOF
+
+## CP-1 — Plan: <one-line plan summary> — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+**Decision:** APPROVED
+**Round:** <which annotation round>
+**Notes:** <any changes made in final round, or "None">
+EOF
+```
+
+2. Write `plan-handoff.json` (see **Plan Handoff JSON** section below).
+
+3. Produce a **task breakdown** — a granular, ordered checklist that the code-implementer will execute step by step.
 
 ### NON-NEGOTIABLE: Do Not Implement
 
@@ -430,6 +483,49 @@ bd create "Structure: <module name>" \
 ```
 
 Structure beads are non-blocking — if `bd create` fails, note it and continue. (Structure beads are a cache; the intent and decision beads are the hard gates.)
+
+## Plan Handoff JSON (Required Output at CP-1 Approval)
+
+When the human approves the plan at CP-1, write `plan-handoff.json` in the working directory alongside `plan.md`. This is the machine-readable contract the implementer executes against. The prose plan is for human reading; the JSON is for the agent gate.
+
+```bash
+cat > plan-handoff.json <<'HANDOFF'
+{
+  "task_id": "<intent bead ID from Step 1>",
+  "created_at": "<ISO timestamp e.g. 2026-03-27T14:00:00Z>",
+  "summary": "<one sentence — what is being implemented>",
+  "scope": {
+    "files_in_scope": ["<path>"],
+    "files_not_in_scope": ["<path>"],
+    "constraints": ["<constraint>"]
+  },
+  "decisions": [
+    {
+      "decision": "<architectural choice made>",
+      "rationale": "<why this approach>",
+      "alternatives_rejected": ["<alt>: <why rejected>"]
+    }
+  ],
+  "changes": [
+    {
+      "file": "<path>",
+      "action": "create|modify|delete",
+      "description": "<what changes and why>",
+      "tests_required": ["<test case description>"]
+    }
+  ],
+  "verification": {
+    "commands": ["<e.g. pytest tests/ -v>"],
+    "blocked_if": ["<e.g. any test fails>"]
+  },
+  "approved": false
+}
+HANDOFF
+```
+
+Leave `"approved": false`. The human sets it to `true` by editing the file (or by responding with explicit approval if in an interactive session). The implementer checks this field and will refuse to start until it is `true`.
+
+> **⛔ REQUIRED GATE:** `plan-handoff.json` must be written before you hand off to the implementer. If writing fails, **STOP** and report the error. Schema: `.claude/schemas/plan-handoff.schema.json`.
 
 ## Remember
 

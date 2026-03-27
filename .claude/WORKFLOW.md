@@ -11,6 +11,55 @@ Research  →  Plan  →  Annotate  →  Implement  →  Review
                     (rework if needed)
 ```
 
+## Human-in-the-Loop Checkpoints
+
+Every architecturally significant moment has a named checkpoint. The human is the explicit decision-maker at each one. Agents record decisions in `decisions.md` — an append-only ledger that lets sessions resume reliably.
+
+| # | Checkpoint | Fires when | What the human decides |
+|---|---|---|---|
+| **CP-0** | Intent confirmation | Intent bead written, before any file reads | Is this the right scope? Files to add/remove? |
+| **CP-1** | Plan approval | `plan-handoff.json` written, plan presented | Does this implementation plan match what I want? |
+| **CP-2** | Review verdict | QR → SK → RC panel complete, `review-final.md` ready | Approve / reject with notes / flag specific issues |
+| **CP-SEC** | Security approval | active-defender assessment complete (optional) | Are identified risks acceptable? Which must be fixed first? |
+
+### decisions.md — The Decision Ledger
+
+`decisions.md` lives in the working directory. Agents append to it at each checkpoint; they read it on session start to reconstruct where a task stands.
+
+**Format:**
+```markdown
+## CP-0 — Intent: <one-line scope> — <ISO timestamp>
+**Decision:** APPROVED | APPROVED_WITH_NOTES | REJECTED
+**Notes:** <what the human said>
+
+## CP-1 — Plan: <one-line plan summary> — <ISO timestamp>
+**Decision:** APPROVED | APPROVED_WITH_NOTES | REJECTED
+**Mode:** full_replay | quick_fix   ← only on REJECTED
+**Rejection notes:**
+- <specific issue>
+**Round:** <N>
+```
+
+**Session resume:** On session start, read `decisions.md`, find the last checkpoint block, check its `Decision:` field:
+- `APPROVED` / `APPROVED_WITH_NOTES` → proceed from next step
+- `REJECTED` with no follow-up block → re-run the producing agent
+- Session Notes block present → apply refinements before continuing
+
+**Rollback protocol:**
+
+| Checkpoint rejected | Files to delete | Resume from |
+|---|---|---|
+| CP-0 (intent) | Rewrite CP-0 block in decisions.md | Re-write intent bead, re-present CP-0 |
+| CP-1 (plan), `full_replay` | `plan-handoff.json`, `plan.md` | code-planner re-runs from Step 2 (keeps intent bead) |
+| CP-1 (plan), `quick_fix` | `plan-handoff.json` only | code-planner re-runs plan writing step only |
+| CP-2 (review), `full_replay` | `review-qr.md`, `review-sk.md`, `review-final.md` | code-reviewer (QR) re-runs from scratch |
+| CP-2 (review), `quick_fix` | `review-final.md` only | code-implementer applies fixes, RC re-evaluates |
+| CP-SEC | `security-assessment.md` | active-defender re-runs with rejection notes as context |
+
+**Never delete:** `decisions.md`, intent bead (in beads db), or an approved `plan-handoff.json`.
+
+---
+
 ## Phases
 
 ### Phase 1: Research
@@ -52,7 +101,7 @@ Skip if: fresh structure beads already exist, project is not Clojure, or task is
 
 ### Phase 2: Plan
 **Owner:** code-planner
-**Artifact:** `plan.md` or inline plan in conversation
+**Artifacts:** `plan.md` (prose, for human reading) + `plan-handoff.json` (structured, for implementer gate)
 
 Produce a concrete implementation plan:
 - Architecture decisions with rationale
@@ -62,11 +111,11 @@ Produce a concrete implementation plan:
 - Security considerations
 - Testing strategy
 
-**The plan is a contract.** Implementation follows it exactly.
+**The plan is a contract.** Implementation follows it exactly. `plan-handoff.json` is the machine-readable form of that contract — see `.claude/schemas/plan-handoff.schema.json` for the schema. The file is written with `"approved": false`; the human sets it to `true` at CP-1.
 
-### Phase 3: Annotate
+### Phase 3: Annotate (CP-1 — Plan Approval)
 **Owner:** human (with code-planner support)
-**Artifact:** annotated plan (inline diff or comments)
+**Artifact:** annotated plan + `decisions.md` CP-1 block
 
 The human reviews the plan and marks it up:
 - Approve sections as-is
@@ -78,28 +127,57 @@ The human reviews the plan and marks it up:
 
 **Complexity scaling:** If the knowledge graph shows high namespace spread (>5 namespaces) or many dependency edges, the planner should proactively suggest deeper research or additional annotation rounds.
 
+**Escalation:** If the plan is rejected 3+ times, the planner appends `⚠ ESCALATED` to `decisions.md` and stops. The human must revise scope or add context before continuing.
+
+**On approval:** code-planner writes `plan-handoff.json`, sets `"approved": false`, and appends CP-1 APPROVED block to `decisions.md`. Human (or code-planner on explicit instruction) sets `"approved": true` in the JSON.
+
 ### Phase 4: Implement
 **Owner:** code-implementer
 **Artifact:** working, tested code
 
 Execute the approved plan:
 - Follow the plan exactly — no architectural freelancing
-- Mark tasks complete as you go
+- Mark tasks complete in `plan-handoff.json` `changes[]` as you go
 - Run tests after each step
+- Run all commands in `verification.commands` before marking done
 - Stop and escalate if the plan doesn't match reality
 
-**Gate:** Implementation cannot start without an approved plan. The implementer will refuse and redirect to code-planner if no plan exists.
+**Gate:** Implementation cannot start without an approved plan. If `plan-handoff.json` is present and `"approved": false`, the implementer stops immediately and redirects to CP-1. If no `plan-handoff.json` exists, the implementer requires a verbal approval signal from the user.
 
-### Phase 5: Review
-**Owner:** code-reviewer, active-defender, test-writer
-**Artifact:** assessment report
+### Phase 5: Review (CP-2 — Review Verdict)
+**Owner:** code-reviewer (QR), code-skeptic (SK), code-reconciler (RC), active-defender, test-writer
+**Artifacts:** `review-qr.md`, `review-sk.md`, `review-final.md`
 
-Verify the implementation:
-- **code-reviewer**: completeness vs plan, code quality, pattern adherence
-- **active-defender**: security testing, vulnerability probing
-- **test-writer**: coverage gaps, edge cases, security test scenarios
+The review panel uses adversarial separation to catch what a single reviewer misses:
 
-If review finds **architectural issues**, recommend returning to Phase 3 (annotate) for another cycle. If review finds **implementation issues**, recommend direct fixes in Phase 4.
+```
+implementation complete
+  ↓
+→ code-reviewer [QR] → writes review-qr.md
+  (completeness vs plan, code quality, pattern adherence)
+  ↓
+→ code-skeptic [SK] — reads review-qr.md → writes review-sk.md
+  (challenges QR's APPROVED conclusions specifically — not re-running QR's checks)
+  ↓
+→ code-reconciler [RC] — reads both → writes review-final.md
+  (verdict table: ACCEPTED / OVERRULED / DEFERRED per disputed item)
+  ↓
+Human sees review-final.md at CP-2
+```
+
+**Panel rules:**
+- SK reads QR's output, not the raw code — its value is challenging approved conclusions, not duplicating QR's completeness check
+- RC never invents findings — it only resolves conflicts between QR and SK
+- RC is short: a verdict table, not paragraphs
+- If SK raises 3+ upheld issues, RC escalates to human rather than flagging all as blockers
+
+**Escalation:** If CP-2 is rejected 2+ times, append `⚠ ESCALATED` to `decisions.md` and stop. The panel does not run a third cycle — it surfaces the unresolved conflict with all review history.
+
+**Also available (parallel to QR/SK/RC):**
+- **active-defender**: security testing, vulnerability probing → triggers CP-SEC if scope warrants it
+- **test-writer**: coverage gaps, edge cases, missing security test scenarios
+
+If review finds **architectural issues**, recommend returning to Phase 3 (annotate). If review finds **implementation issues**, recommend direct fixes in Phase 4.
 
 ## Complexity Scaling
 
@@ -124,23 +202,29 @@ All artifacts live in the conversation thread or working directory. No special d
 
 | Artifact | Location | Persistence |
 |----------|----------|-------------|
-| research.md | conversation or working dir | session |
-| plan.md | conversation or working dir | session |
+| research.md | working dir | session |
+| plan.md | working dir | session |
+| plan-handoff.json | working dir | permanent (gate for implementer) |
+| decisions.md | working dir | permanent (append-only ledger) |
 | annotations | inline in conversation | session |
 | code changes | git working tree | permanent |
-| review report | conversation | session |
+| review-qr.md | working dir | session |
+| review-sk.md | working dir | session |
+| review-final.md | working dir | session |
 
-For plans that span multiple sessions, save `plan.md` to the working directory so it persists.
+For plans that span multiple sessions, save `plan.md` and `plan-handoff.json` to the working directory. `decisions.md` always stays — it is the session resume anchor.
 
 ## Agent-to-Phase Mapping
 
-| Agent | Primary Phase | Secondary |
-|-------|--------------|-----------|
-| **code-planner** | 1 (Research), 2 (Plan) | 3 (Annotate — processes feedback) |
-| **code-implementer** | 4 (Implement) | — |
-| **code-reviewer** | 5 (Review) | 3 (Annotate — architectural feedback) |
-| **active-defender** | 5 (Review) | — |
-| **test-writer** | 5 (Review) | — |
+| Agent | Primary Phase | Secondary | Review role |
+|-------|--------------|-----------|-------------|
+| **code-planner** | 1 (Research), 2 (Plan) | 3 (Annotate — processes feedback) | — |
+| **code-implementer** | 4 (Implement) | — | — |
+| **code-reviewer** | 5 (Review) | 3 (Annotate — architectural feedback) | QR — completeness + quality |
+| **code-skeptic** | 5 (Review) | — | SK — adversarial challenge of QR |
+| **code-reconciler** | 5 (Review) | — | RC — verdict table, dispute resolution |
+| **active-defender** | 5 (Review / CP-SEC) | — | Security probe |
+| **test-writer** | 5 (Review) | — | Coverage gaps |
 
 ## Quick Reference
 

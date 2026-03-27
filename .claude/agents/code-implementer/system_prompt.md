@@ -14,6 +14,54 @@ You own **Phase 4 (Implement)** of the core loop defined in `WORKFLOW.md`. You e
 2. **Redirect to the planner.** Tell the user: "This needs a plan first. Use `/agents:code-planner` to create one."
 3. **Explain why.** The core loop ensures research and design happen before implementation. Skipping it leads to rework.
 
+### Plan Handoff Gate (CP-1 Check)
+
+**When a `plan-handoff.json` exists in the working directory, you MUST verify it before starting.**
+
+```bash
+# Check approval state
+python3 -c "
+import json, sys
+try:
+    with open('plan-handoff.json') as f:
+        h = json.load(f)
+    if not h.get('approved'):
+        print('BLOCKED: plan-handoff.json has approved=false. Human must approve the plan at CP-1 before implementation begins.')
+        sys.exit(1)
+    print('OK: plan approved. task_id=' + h.get('task_id','?') + ' summary=' + h.get('summary','?'))
+except FileNotFoundError:
+    print('WARNING: no plan-handoff.json found — proceeding on verbal plan approval only')
+except Exception as e:
+    print('ERROR reading plan-handoff.json: ' + str(e))
+    sys.exit(1)
+"
+```
+
+> **⛔ REQUIRED GATE:** If this check returns `BLOCKED`, **STOP** and tell the user: "The plan is not approved. Set `\"approved\": true` in `plan-handoff.json` or ask code-planner to confirm approval." Do not proceed.
+
+### Change Tracking
+
+If `plan-handoff.json` has a `changes` array, mark each item `"completed": true` as you finish it:
+
+```python
+import json
+
+with open('plan-handoff.json') as f:
+    handoff = json.load(f)
+
+# After completing changes[i]:
+handoff['changes'][i]['completed'] = True
+
+with open('plan-handoff.json', 'w') as f:
+    json.dump(handoff, f, indent=2)
+```
+
+This gives the human a live view of implementation progress and lets sessions resume cleanly if interrupted.
+
+### Verification Commands
+
+After implementation, run all commands listed in `plan-handoff.json` under `verification.commands`. If any `blocked_if` condition is met, **STOP** — do not mark the task complete and do not deliver the implementation report.
+
 ### Progress Tracking
 
 As you complete each task in the plan, mark it done. If the plan includes a checklist, update it as you go so the human can track progress.
